@@ -1,0 +1,226 @@
+---
+layout: page
+title: Observability
+---
+
+
+<p>The Campaign client implements an observer mechanism that you can use to hook into what's hapenning internally.</p>
+
+<p>An <b>Observer</b> is an object which has one or several callback methods which will be called at certain particular points in the SDK</p>
+
+
+<h1>SOAP calls</h1>
+<p>It is possible to observe the SOAP calls that are performed by the SDK. The following callbacks are called whenever a SOAP call is made. They can observe the SOAP calls but are not supposed to modify any of the parameters</p>
+<p></p>
+<ul>
+    <li><b>onSOAPCall</b> (soapCall, safeCallData)</li>
+    <li><b>onSOAPCallSuccess</b> (soapCall, safeCallResponse) {}</li>
+    <li><b>onSOAPCallFailure</b> (soapCall, exception) {}</li>
+</ul>
+
+<p>The <b>soapCall</b> parameter is the SOAP call which is being observed. In the <b>onSOAPCall</b> callback, the SOAP call has not been executed yet.</p>
+
+<p>The <b>safeCallData</b> and <b>safeCallResponse</b> represent the text XML of the SOAP request and response, but in which all session and security tokens have been replaced with "***" string. Hence the name "safe". You should use those parameters for any logging purpose to avoid leaking credentials.</p>
+
+
+<p>The <b>soapCall</b> parameter is a <b>SoapMethodCall</b> object which describes the SOAP call. It has the following public attributes. </p>
+<p></p>
+<ul>
+    <li><b>urn</b> is the SOAP URN which corresponds to the Campaign schema id. For instance "xtk:session"</li>
+    <li><b>methodName</b> is the name of the method to call. For instance "Logon"</li>
+    <li><b>internal</b> is true or false, depending if the SOAP call is an internal SOAP call performed by the framework itself, or if it's a SOAP call issued by a SDK user</li>
+    <li><b>request</b> is a literal corresponding to the HTTP request. It's compatible with the <b>transport</b> protocol. It may be undefined if the SOAP call has need been completely built</li>
+    <li><b>response</b> is a string containing the XML result of the SOAP call if the call was successful. It may be undefined if the call was not executed yet or if the call failed</li>
+</ul>
+
+
+
+<h1>HTTP calls</h1>
+<p>For HTTP calls (such as JSP, JSSP...). Note that despite SOAP calls are also HTTP calls, the following callbacks will not be called for SOAP calls. These callbacks are not supposed to modify any of the parameters</p>
+<p></p>
+<ul>
+    <li><b>onHTTPCall</b> (request, safeCallData)</li>
+    <li><b>onHTTPCallSuccess</b> (request, safeCallResponse) {}</li>
+    <li><b>onHTTPCallFailure</b> (request, exception) {}</li>
+</ul>
+
+
+<p>The <b>request</b> parameter is the HTTP request (as defined in the transport protocol above)</p>
+
+
+<h1>Logging all SOAP calls</h1>
+
+<p>SOAP calls can be logged by setting the <b>traceAPICalls</b> attribute on the client at any time. For security reasons, the security and session tokens values will be replaced by "***" to avoid leaking them</p>
+
+
+<pre class="code">
+client.traceAPICalls(true);
+</pre>
+
+<p>This is an example of the logs</p>
+<pre class="code">
+SOAP//request xtk:session#GetOption &lt;SOAP-ENV:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+xmlns:ns="http://xml.apache.org/xml-soap">
+&lt;SOAP-ENV:Header>
+&lt;Cookie>__sessiontoken=***&lt;/Cookie>
+&lt;X-Security-Token>***&lt;/X-Security-Token>
+&lt;/SOAP-ENV:Header>
+&lt;SOAP-ENV:Body>
+&lt;m:GetOption xmlns:m="urn:xtk:session" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+&lt;sessiontoken xsi:type="xsd:string">***&lt;/sessiontoken>
+&lt;name xsi:type="xsd:string">XtkDatabaseId&lt;/name>
+&lt;/m:GetOption>
+&lt;/SOAP-ENV:Body>
+&lt;/SOAP-ENV:Envelope>
+
+SOAP//response xtk:session#GetOption &lt;?xml version='1.0'?>
+&lt;SOAP-ENV:Envelope xmlns:xsd='http://www.w3.org/2001/XMLSchema'
+xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+xmlns:ns='urn:xtk:session'
+xmlns:SOAP-ENV='http://schemas.xmlsoap.org/soap/envelope/'>
+&lt;SOAP-ENV:Body>
+&lt;GetOptionResponse xmlns='urn:xtk:session' SOAP-ENV:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'>
+&lt;pstrValue xsi:type='xsd:string'>uFE80000000000000F1FA913DD7CC7C4804BA419F&lt;/pstrValue>
+&lt;pbtType xsi:type='xsd:byte'>6&lt;/pbtType>
+&lt;/GetOptionResponse>
+&lt;/SOAP-ENV:Body>
+&lt;/SOAP-ENV:Envelope>
+</pre>
+
+
+
+
+
+<h1>Observability events</h1>
+<p>In version 1.1.7, the observer interface is extended to listen for internal events of the SDK. The <b>event</b> function of the observer, if it exist will be call for each SDK event with 2 parameters: the event itself, and for some events, a parent event. For instance a SOAP response event will have the SOAP request for a parent event.</p>
+
+<pre class="code">
+client.registerObserver({
+    event: (event, parentEvent) => { ... },
+});
+</pre>
+
+<p>The following events are available</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Event name</th>
+            <th>Comment / Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>SDK//logon</td>
+            <td>A client logs on</td>
+        </tr>
+        <tr>
+            <td>SDK//logoff</td>
+            <td>A client logs off</td>
+        </tr>
+        <tr>
+            <td>CACHE//stats</td>
+            <td>Regularly sends stats about internal caches</td>
+        </tr>
+        <tr>
+            <td>SOAP//request</td>
+            <td>The SDK executes a SOAP request</td>
+        </tr>
+        <tr>
+            <td>SOAP//response</td>
+            <td>The SDK processes the successful response of a SOAP request</td>
+        </tr>
+        <tr>
+            <td>SOAP//failure</td>
+            <td>A SOAP request failed</td>
+        </tr>
+        <tr>
+            <td>HTTP//request</td>
+            <td>The SDK executes an HTTP request</td>
+        </tr>
+        <tr>
+            <td>HTTP//response</td>
+            <td>The SDK processes the successful response of an HTTP request</td>
+        </tr>
+        <tr>
+            <td>HTTP//failure</td>
+            <td>An HTTP request failed</td>
+        </tr>
+        <tr>
+            <td>CACHE_REFRESHER//start</td>
+            <td>A cache auto-refresher starts</td>
+        </tr>
+        <tr>
+            <td>CACHE_REFRESHER//stop</td>
+            <td>A cache auto-refresher stops</td>
+        </tr>
+        <tr>
+            <td>CACHE_REFRESHER//tick</td>
+            <td>A cache auto-refresh occurs</td>
+        </tr>
+        <tr>
+            <td>CACHE_REFRESHER//loggedOff</td>
+            <td>The cache auto-refresh was triggered whereas the client was logged of</td>
+        </tr>
+        <tr>
+            <td>CACHE_REFRESHER//error</td>
+            <td>The cache auto-refresh failed. Auto-refresh will continue.</td>
+        </tr>
+        <tr>
+            <td>CACHE_REFRESHER//abort</td>
+            <td>The cache auto-refresh failed because the server does not support it. Auto-refresh will stop.</td>
+        </tr>
+        <tr>
+            <td>CACHE_REFRESHER//response</td>
+            <td>The server responded to an auto-refresh request</td>
+        </tr>
+    </tbody>
+</table>
+
+
+
+<h1>Method interception</h1>
+
+<p>
+    In version 1.1.17 of the SDK, it's possible to use the observer mechanism to intercept SOAP calls, modify parameters before the call is made, or modify the response before it's returned to the caller.
+</p>
+<p>
+    Some SOAP calls are not intercepted: internal SOAP calls performed by the SDK itself (for instance to get schemas) are not intercepted. Logon and Logoff methods are not intercepted either.
+</p>
+<p>
+    The <b>beforeSoapCall</b> and <b>afterSoapCall</b> methods can be used. They will be passed the following parameters
+</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Comment / Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><b>method</b></td>
+            <td>An object describing the SOAP method. It contains the <b>urn</b>, <b>name</b> and <b>isStatic</b> attributes</td>
+        </tr>
+        <tr>
+            <td><b>object</b></td>
+            <td>The object ("this") on which the method applies (it will be undefined for static methods). The <b>beforeSoapCall</b> callback is free to modify the object as needed.</td>
+        </tr>
+        <tr>
+            <td><b>inputParameters</b></td>
+            <td>Is an array containing the method parameters. The <b>beforeSoapCall</b> callback is free to modify the object as needed. </td>
+        </tr>
+        <tr>
+            <td><b>representation</b></td>
+            <td>The representation (SimpleJson, xml, etc.) used for this method and in which the object and parameters are set</td>
+        </tr>
+        <tr>
+            <td><b>outputParameters</b></td>
+            <td>For the <b>afterSoapCall</b> method, an array containing the return value of the SOAP calls. The <b>afterSoapCall</b> callback is free to modify the object as needed. </td>
+        </tr>
+    </tbody>
+</table>
+

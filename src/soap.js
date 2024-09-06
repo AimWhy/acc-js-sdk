@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 (function() {
 "use strict";    
-    
+/*jshint sub:true*/
 
 /**********************************************************************************
  * 
@@ -78,29 +78,37 @@ const NS_XSD = "http://www.w3.org/2001/XMLSchema";
  * @param {string} sessionToken Campaign session token
  * @param {string} securityToken  Campaign security token
  * @param {string} userAgentString The user agent string to use for HTTP requests
- * @param {string} charset The charset encoding used for http requests, usually UTF-8
+ * @param {string} pushDownOptions Options to push down to the request (comes from connectionParameters._options)
+ * @param {{ name:string, value:string}} extraHttpHeaders key/value pair of HTTP header (will override any other headers)
+ * @param {string} bearerToken The bearer token to use for HTTP requests. Only required for ImsBearerToken authentication
  * @memberof SOAP
  */
 class SoapMethodCall {
     
-    constructor(transport, urn, methodName, sessionToken, securityToken, userAgentString, charset) {
-        this.request = undefined;       // The HTTP request (object litteral passed to the transport layer)
+    constructor(transport, urn, methodName, sessionToken, securityToken, userAgentString, pushDownOptions, extraHttpHeaders, bearerToken) {
+        this.request = undefined;       // The HTTP request (object literal passed to the transport layer)
+        this.requestOptions = undefined;
         this.response = undefined;      // The HTTP response object (in case of success)
 
         // Current URN and method (for error reporting)
         this.urn = urn;
         this.methodName = methodName;
+        this.isStatic = false;
 
         // Soap calls marked as internal are calls performed by the framework internally
         // (such as GetEntityIfMoreRecent calls needed to lookup schemas)
         this.internal = false;
         // Enable soap retry
         this.retry = true;
+        this._retryCount = 0;
 
         this._sessionToken = sessionToken || "";
         this._securityToken = securityToken || "";
+        this._bearerToken = bearerToken; // may be undefined if not using bearer token authentication
         this._userAgentString = userAgentString;
-        this._charset = charset || "";
+        this._pushDownOptions = pushDownOptions || {};
+        this._charset = this._pushDownOptions.charset || '';
+        this._extraHttpHeaders = extraHttpHeaders || {};
 
         // THe SOAP call being built
         this._doc = undefined;           // XML document for SOAP call
@@ -286,6 +294,7 @@ class SoapMethodCall {
     writeElement(tag, element) {
         const node = this._addNode(tag, "ns:Element", null, SOAP_ENCODING_XML);
         if (element !== null && element !== undefined) {
+            if (element.nodeType === 9) element = element.documentElement;
             const child = this._doc.importNode(element, true);
             node.appendChild(child);
         }
@@ -299,7 +308,8 @@ class SoapMethodCall {
     writeDocument(tag, document) {
         const node = this._addNode(tag, "", null, SOAP_ENCODING_XML);
         if (document !== null && document !== undefined) {
-            const child = this._doc.importNode(document.documentElement, true);
+            const element = document.nodeType === 1 ? document : document.documentElement;
+            const child = this._doc.importNode(element, true);
             node.appendChild(child);
         }
     }
@@ -327,6 +337,7 @@ class SoapMethodCall {
      * In Campaign, non static SOAP calls may return an "entity" DOM Element, which corresponds to the object on which
      * the method is called. A good example is the xtk:queryDef#SelectAll API call: the method definition does not have
      * any return parameters, but it still returns an <entity> element contains the queryDef with all select nodes.
+     * When the method is implemented in JavaScript instead of C++, then the entity element will actually be named "this".
      * 
      * @private
      * @returns the Entity DOM Element if there's one, or null if there isn't. The currentElement pointer will be  updated accordingly
@@ -334,9 +345,9 @@ class SoapMethodCall {
     getEntity() {
         if (!this.elemCurrent)
             return null;
-            if (this.elemCurrent.getAttribute("xsi:type") != "ns:Element")
+        if (this.elemCurrent.getAttribute("xsi:type") != "ns:Element")
             return null;
-        if (this.elemCurrent.tagName != "entity")
+        if (this.elemCurrent.tagName != "entity" && this.elemCurrent.tagName != "this")
             return null;
         var entity = this.elemCurrent;
         entity = DomUtil.getFirstChildElement(entity);
@@ -351,6 +362,18 @@ class SoapMethodCall {
      */
     getNextString() {
         this._checkTypeMatch("xsd:string");
+        var value = DomUtil.elementValue(this.elemCurrent);
+        this.elemCurrent = DomUtil.getNextSiblingElement(this.elemCurrent);
+        return value;
+    }
+
+    /**
+     * Extracts the next result value as a primary key string
+     * 
+     * @returns {string} the primary key string result value
+     */
+    getNextPrimaryKey() {
+        this._checkTypeMatch("xsd:primarykey");
         var value = DomUtil.elementValue(this.elemCurrent);
         this.elemCurrent = DomUtil.getNextSiblingElement(this.elemCurrent);
         return value;
@@ -513,23 +536,46 @@ class SoapMethodCall {
      * @param {string} url is the Campaign SOAP endpoint (soaprouter.jsp)
      * @returns {Object} an options object describing the HTTP request, with cookies, headers and body
      */
-    _createHTTPRequest(url) {
+    _createHTTPRequest(url, requestOptions) {
 
-        const options = {
+        const headers = {
+            'Content-type': `application/soap+xml${this._charset ? ";charset=" + this._charset : ""}`,
+            'SoapAction': `${this.urn}#${this.methodName}`,
+        };
+        if (this._bearerToken) {
+            headers['Authorization'] = `Bearer ${this._bearerToken}`;
+        }
+        else {
+            headers['X-Security-Token'] = this._securityToken;
+            headers['X-Session-Token'] = this._sessionToken;
+        }
+
+        // Add HTTP headers specific to the SOAP call for better tracing/troubleshooting
+        if (this._extraHttpHeaders && this._extraHttpHeaders['ACC-SDK-Version']) {
+            // "this.retry" means that the call can be retried, not that it is being retried. The HTTP header howerver, indicates that this
+            // is actually a retry of a previously failed call (expired token)
+            if (this._retryCount > 0) headers["ACC-SDK-Call-RetryCount"] = `${this._retryCount}`;
+            if (this.internal) headers["ACC-SDK-Call-Internal"] = "1";
+        }
+
+        const request = {
             url: url,
             method: 'POST',
-            headers: {
-                'Content-type': `application/soap+xml${this._charset ? ";charset=" + this._charset : ""}`,
-                'SoapAction': `${this.urn}#${this.methodName}`,
-                'X-Security-Token': this._securityToken
-            },
+            headers: headers,
             data: DomUtil.toXMLString(this._doc)
         };
         if (this._sessionToken)
-            options.headers.Cookie = '__sessiontoken=' + this._sessionToken;
+            request.headers.Cookie = '__sessiontoken=' + this._sessionToken;
         if (this._userAgentString)
-            options.headers['User-Agent'] = this._userAgentString;
-        return options;
+            request.headers['User-Agent'] = this._userAgentString;
+
+        // Override http headers with custom headers
+        for (let h in this._extraHttpHeaders) {
+            request.headers[h] = this._extraHttpHeaders[h];
+        }
+
+        const extraOptions = Object.assign({}, this._pushDownOptions, requestOptions);
+        return [ request, extraOptions ];
     }
     
     /**
@@ -541,6 +587,7 @@ class SoapMethodCall {
         if (client) {
             this._sessionToken = client._sessionToken;
             this._securityToken = client._securityToken;
+            this._bearerToken = client._bearerToken;
         }
 
         var cookieHeader = DomUtil.findElement(this._header, "Cookie");
@@ -575,9 +622,11 @@ class SoapMethodCall {
             sessionTokenElem.textContent = this._sessionToken;
             this._method.prepend(sessionTokenElem);
         }
-        const options = this._createHTTPRequest(url);
+        const noMethodInURL = !!this._pushDownOptions.noMethodInURL;
+        const actualUrl = noMethodInURL ? url : `${url}?soapAction=${encodeURIComponent(this.urn + "#" + this.methodName)}`;
+
         // Prepare request and empty response objects
-        this.request = options;
+        [this.request, this.requestOptions] = this._createHTTPRequest(actualUrl);
         this.response = undefined;
     }
 
@@ -590,10 +639,8 @@ class SoapMethodCall {
      */
     async execute() {
         const that = this;
-        const promise = this._transport(this.request);
+        const promise = this._transport(this.request, this.requestOptions);
         return promise.then(function(body) {
-            if (body.indexOf(`XSV-350008`) != -1)
-                throw CampaignException.SESSION_EXPIRED();
             that.response = body;
             // Response is a serialized XML document with the following structure
             //
@@ -647,7 +694,9 @@ class SoapMethodCall {
             }
         })
         .catch(function(err) {
-            throw makeCampaignException(that, err);
+            if (that.response && that.response.indexOf(`XSV-350008`) != -1)
+              throw CampaignException.SESSION_EXPIRED();
+            else throw makeCampaignException(that, err);
         });
     }
 

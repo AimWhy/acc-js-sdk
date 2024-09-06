@@ -75,8 +75,8 @@ class MethodCache extends Cache {
      * @deprecated
      * @param {Element} schema DOM document node represening the schema 
      */
-    cache(schema) {
-        return this.put(schema);
+    async cache(schema) {
+        return await this.put(schema);
     }
     
     /**
@@ -84,38 +84,49 @@ class MethodCache extends Cache {
      * 
      * @param {Element} schema DOM document node represening the schema 
      */
-    put(schema) {
+    async put(schema) {
         var namespace = DomUtil.getAttributeAsString(schema, "namespace");
         var name = DomUtil.getAttributeAsString(schema, "name");
         var impls = DomUtil.getAttributeAsString(schema, "implements");
         var root = DomUtil.getFirstChildElement(schema);
         while (root) {
-            var schemaId;
-            var soapUrn;
-
+            let schemaId;
             if (root.nodeName == "interface") {
-                const itfName = namespace + ":" +  DomUtil.getAttributeAsString(root, "name");
-                if (impls === itfName) {
-                    schemaId = namespace + ":" + name;
-                    soapUrn = itfName;
-                }
+                const nodeName = DomUtil.getAttributeAsString(root, "name");
+                schemaId = `${namespace}:${nodeName}`;
             }
             else if (root.nodeName == "methods") {
-                schemaId = namespace + ":" + name;
-                soapUrn = schemaId;
+                schemaId = `${namespace}:${name}`;
             }
-
             if (schemaId) {
                 var child = DomUtil.getFirstChildElement(root, "method");
                 while (child) {
                     const methodName = DomUtil.getAttributeAsString(child, "name");
-                    const cached = { method: child, urn: soapUrn };
-                    super.put(schemaId, methodName, cached);
-                    super.put(soapUrn, methodName, cached); /// version 0.1.23: cache the method in both the schema id and interface id form compatibility reasons
+                    const cached = { method: child, urn: schemaId };
+                    await super.put(schemaId, methodName, cached);
                     child = DomUtil.getNextSiblingElement(child, "method");
                 }
             }
             root = DomUtil.getNextSiblingElement(root);
+        }
+
+        // If the schema implements an interface, then add the interface methods to the schema
+        // methods in the cache, using the "<interface>|<schemaId>" urn
+        // example: xtk:session implements xtk:persist, and therefore will have xtk:persist methods
+        // under the urn "xtk:persist|xtk:session"
+        if (impls) {
+            const schemaId = `${namespace}:${name}`;
+            const prefix = `${impls}#`;
+            const urn = `${impls}|${schemaId}`;
+            const keys = Object.keys(this._cache);
+            for (const key of keys) {
+                if (key.startsWith(prefix)) {
+                    let cached = this._cache[key].value;
+                    cached = { method: cached.method, urn: urn };
+                    const methodName = DomUtil.getAttributeAsString(cached.method, "name");
+                    await super.put(schemaId, methodName, cached);
+                }
+            }
         }
     }
 
@@ -126,8 +137,8 @@ class MethodCache extends Cache {
      * @param {string} methodName the method name
      * @returns {Campaign.SoapMethodDefinition} the method definition, or undefined if the schema or the method is not found
      */
-    get(schemaId, methodName) {
-        const cached = super.get(schemaId, methodName);
+    async get(schemaId, methodName) {
+        const cached = await super.get(schemaId, methodName);
         return cached ? cached.method : undefined;
     }
 
@@ -138,8 +149,8 @@ class MethodCache extends Cache {
      * @param {string} methodName the method name
      * @returns {string} the URN (or Soap action header), or undefined if the schema or the method is not found
      */
-    getSoapUrn(schemaId, methodName) {
-        const cached = super.get(schemaId, methodName);
+    async getSoapUrn(schemaId, methodName) {
+        const cached = await super.get(schemaId, methodName);
         return cached ? cached.urn : undefined;
     }
 }

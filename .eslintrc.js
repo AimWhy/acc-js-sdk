@@ -4,12 +4,14 @@ module.exports = {
         "commonjs": true,
         "es2021": true,
         "node": true,
-        "jest": true
+        "jest": true,
+        circus: true
     },
     "extends": "eslint:recommended",
     "parserOptions": {
         "ecmaVersion": 12
     },
     "rules": {
+        "indent": ["error", 2],
     }
 };

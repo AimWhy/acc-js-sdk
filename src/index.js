@@ -23,7 +23,8 @@ const DomUtil = require('./domUtil.js').DomUtil;
 const XtkCaster = require('./xtkCaster.js').XtkCaster;
 const { Client, Credentials, ConnectionParameters } = require('./client.js');
 const request = require('./transport.js').request;
-const { TestUtil } = require('./testUtil');
+const { TestUtil } = require('./testUtil.js');
+const { HttpError } = require('./transport.js');
 
 /**
  * Get/Set the transport function (defaults to Axios). This function is used for testing / mocking the transport layer.
@@ -111,15 +112,15 @@ class SDK {
      * There are 2 alternate signatures for this function
      * <ul>
      * <li> the first one takes one single parameter which is a string and returns the escaped, quoted string
-     * <li> the second one takes 2 array of strings and is called when using the function in tagged string litterals. The first array is the constant parts
-     *   of the string litteral, and the second array contains the variable parts. See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals
+     * <li> the second one takes 2 array of strings and is called when using the function in tagged string literals. The first array is the constant parts
+     *   of the string literal, and the second array contains the variable parts. See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals
      * </ul>
      * <p>
-     * The function can be used in a tagged string litterals like this: "var expr = escapeXtk`@name=${hello}`"
+     * The function can be used in a tagged string literals like this: "var expr = escapeXtk`@name=${hello}`"
      * <p>
      * @memberof Campaign
-     * @param {string|string[]} p1 is the text to escape. If the text is null or undefined, it will be handled as an empty string. when using the escapeXtk for a tagged string litteral, this parameter is the array of constant values in the template.
-     * @param {undefined|string[]} p2 when using the escapeXtk for a tagged string litteral, this parameter is the array of expression values in the template.
+     * @param {string|string[]} p1 is the text to escape. If the text is null or undefined, it will be handled as an empty string. when using the escapeXtk for a tagged string literal, this parameter is the array of constant values in the template.
+     * @param {undefined|string[]} p2 when using the escapeXtk for a tagged string literal, this parameter is the array of expression values in the template.
      * @returns {string} the escaped and quoted (simple quotes) text.
      * 
      * @example
@@ -137,7 +138,7 @@ class SDK {
             return "'" + String(p1).replace(/\\/g, "\\\\").replace(/'/g,  "\\'") + "'";
         }
 
-        // Second syntax: for use in tagged template litterals
+        // Second syntax: for use in tagged template literals
         // instead of writing:  { expr: "@name = " + escapeXtk(userName) }
         // you write { expr: escapeXtk`@name = {userName}` }
         if (p1.length == 0) return "''";
@@ -210,6 +211,7 @@ sdk.XtkCaster = XtkCaster;
 sdk.Credentials = Credentials;
 sdk.DomUtil = DomUtil;
 sdk.ConnectionParameters = ConnectionParameters;
+sdk.HttpError = HttpError;
 
 // Public exports
 module.exports = sdk;

@@ -1,0 +1,630 @@
+---
+layout: page
+title: Change Log
+---
+<section class="changelog"><h1>Version 1.1.53</h1>
+  <h2>2024/09/06</h2>
+  <li>
+    Fixed JSON/XML serialization when there is both an attribute and an element with the same name
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.52</h1>
+  <h2>2024/09/04</h2>
+  <li>
+    Updated dependencies to fix vulnerabilities reported by npm
+  </li>
+  <li>
+    Report upload error correctly when file upload fails
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.51</h1>
+  <h2>2024/08/15</h2>
+  <li>
+    Fix Vulnerability in Axios
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.50</h1>
+  <h2>2024/07/18</h2>
+  <li>
+    <a href="https://github.com/adobe/acc-js-sdk/pull/110">Issue 110</a>. Update fileUploader iframe style so it remains hidden.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.49</h1>
+  <h2>2024/07/07</h2>
+  <li>
+    <a href="https://github.com/adobe/acc-js-sdk/pull/109">Issue 109</a>. Extra HTTP headers were not passed in all API calls.
+  </li>
+  <li>
+    Updated dependencies to fix vulnerabilities.
+  </li>
+</section>
+
+
+<section class="changelog"><h1>Version 1.1.48</h1>
+  <h2>2024/06/11</h2>
+  <li>
+    <a href="https://github.com/adobe/acc-js-sdk/issues/106">Issue 106</a>. Add support for file download.
+  </li>
+  <li>
+    <a href="https://github.com/adobe/acc-js-sdk/issues/10"7>Issue 107</a>. Ability to create a job interface from a job id and get the job status from here.
+  </li>
+  <li>
+    Updated dependencies to fix <a href="https://github.com/advisories/GHSA-grv7-fg5c-xmjg">vulnerabilities</a>.
+  </li>
+</section>
+
+
+<section class="changelog"><h1>Version 1.1.47</h1>
+  <h2>2024/04/23</h2>
+  <li>
+    <a href="https://github.com/adobe/acc-js-sdk/issues/105">Issue 105</a>. Fix XML name of parameters in workflow functions. The name is expected to be 'variables' and not 'parameters'.
+    Methods StartWithParameters, PostEvent, SimulateWithParameters, SpawnWithParameters, and SpawnWithParametersEx are included.
+  </li>
+</section>
+
+
+<section class="changelog"><h1>Version 1.1.46</h1>
+  <h2>2024/03/19</h2>
+  <li>
+    Method nms:extAccount#TestAccount could not be called because it has parameters which are both input and output (inout="inout") and this was not supported by the SDK
+  </li>
+  <li>
+    Update follow-redirects 3rd party to fix a potential vulnerability
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.45</h1>
+  <h2>2024/01/15</h2>
+  <li>
+    Update follow-redirects 3rd party to fix a potential vulnerability
+  </li>
+  <li>
+    Calling non-static, non-const, and non-pkonly methods would fail with a parameter type mismatch error. 
+    The reason is that the entity returned by such methods is named &lt;this&gt; and not &lt;entity&gt;.
+    Note that const and non-pkonly methods are probably still not handled properly by the SDK.
+  </li>
+</section>
+
+
+<section class="changelog"><h1>Version 1.1.44</h1>
+  <h2>2024/01/02</h2>
+  <li>
+    Add the "ordered" and "doesNotSupportDiff" attributes to the nodes in the application object
+  </li>
+</section>
+
+
+<section class="changelog"><h1>Version 1.1.43</h1>
+  <h2>2023/12/21</h2>
+  <li>
+    Do not throw an error in case of duplicate enumeration value. Use the last one instead. This introduces a small behavior change
+    because this was causing an exception before.
+  </li>
+</section>
+
+
+<section class="changelog"><h1>Version 1.1.42</h1>
+  <h2>2023/12/20</h2>
+  <li>
+    Fixed a typo in documentation
+  </li>
+  <li>
+    Added 2 blog articles about schema creation (SOAP calls)
+  </li>
+  <li>
+    Fixed the documentation: blog articles links were broken
+  </li>
+  <li>
+    Upgraded Axios to fix a vulnerability
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.41</h1>
+  <h2>2023/11/01</h2>
+  <li>
+    Support submitting jobs on static methods
+  </li>
+  <li>
+    Fixed a bug (missing await) when retreiving method object from cache when submitting a job on a non-static method
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.40</h1>
+  <h2>2023/09/27</h2>
+  <li>
+    Every upload creates a new iframe is added to the body tag which takes up some space resulting in the scrollbar. Fix this by allowing CSS attributes on the iFrame.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.39</h1>
+  <h2>2023/09/20</h2>
+  <li>
+    Fixed the name of the returned object when querying a temporary schema and when the result of the query is empty.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.38</h1>
+  <h2>2023/09/06</h2>
+  <li>
+    Add support for anonymous SOAP calls. See <a href="https://opensource.adobe.com/acc-js-sdk/anonymous.html"></a> for more information.
+  </li>
+</section>
+
+
+<section class="changelog"><h1>Version 1.1.37</h1>
+  <h2>2023/08/07</h2>
+  <li>
+    Fix missing schema localisation for description id when description is empty in the source schema
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.36</h1>
+  <h2>2023/07/28</h2>
+  <li>
+    Fixed the `uploadAemAsset` method when used from a browser, using fetch for HTTP requests.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.35</h1>
+  <h2>2023/07/25</h2>
+  <li>
+    Added `sessionInfo` parameter to `ofImsBearerToken` function. When this parameter is used, the logon call will make sure user and server informations are returned. See <a href="https://opensource.adobe.com/acc-js-sdk/connecting.html"></a> for more information.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.34</h1>
+  <h2>2023/07/25</h2>
+  <li>
+    Added `uploadAemAsset` method which downloads an asset from AEM and uploads it to Campaign. See <a href="https://opensource.adobe.com/acc-js-sdk/uploadAemAsset.html"></a> for more information.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.33</h1>
+  <h2>2023/07/08</h2>
+  <li>
+    Because of a server-side bug, there could be shemas with multiple copies of an enumeration. Make sure the SDK will not fail loading such schemas (only the first copy of the enumeration will be considered)
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.32</h1>
+  <h2>2023/06/22</h2>
+  <li>
+    Support the fact that "translatedDefault" can be an element in a schema (and not just an attribute)
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.31</h1>
+  <h2>2023/06/19</h2>
+  <li>
+    Fixed a caching issue: xtk:session method can be missing from the cache. This is a temporary fix. A better fix is needed to
+    properly handle consistency of the entity and method caches.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.30</h1>
+  <h2>2023/06/19</h2>
+  <li>
+    Fixed an issue causing errors when parsing some specific enumerations such as xtk:dataTransfer:decimalCount which
+    contain enumeration values without "value" attributes and whose "name" attribute contains stringified numbers.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.29</h1>
+  <h2>2023/06/15</h2>
+  <li>
+    Passing pushdown options to observability layer
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.28</h1>
+  <h2>2023/06/09</h2>
+  <li>
+    Consider elements with multiple text children as if they had one single text child
+  </li>
+</section>
+
+
+<section class="changelog"><h1>Version 1.1.27</h1>
+  <h2>2023/05/10</h2>
+  <li>
+    Fixed a unit test which was failing in Node 16 but succeeding on node 14. The reason is that the error message thrown by Node when accessing a property of a null object changed between the 2 versions.
+  </li>
+  <li>
+    The `client.getSchema` and `application.getSchema` functions are now able to return group schemas 
+    (using the temp:group:{id} format for the schema id). See <a href="https://opensource.adobe.com/acc-js-sdk/xtkSchema.html"></a> for more information.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.26</h1>
+  <h2>2023/04/17</h2>
+
+  <li>
+    Added support for IMS Bearer tokens without require any session and security tokens. See <a href="https://opensource.adobe.com/acc-js-sdk/connecting.html"> for more details.</a>
+  </li>
+  <li>
+    Fixed a bug causing incorrect JSON to XML transformation when the JSON object has a property named 'length'
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.25</h1>
+  <h2>2023/03/07</h2>
+
+  <li>
+    Added an (optional) parameter "options" to the file upload function. This parameter contains an "action" property whose value
+    can be "publishIfNeeded" or "none" and indicates which action the upload function should perform after it uploaded the file.
+    The default is "publishIfNeeded" which consists of creating a public resources with the file content and publishing it (making
+    it available publicly). The other action "none" means that no action is taken and that it is the responsibility of the caller
+    to post-process the uploaded file by calling the relevant APIs.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.24</h1>
+  <h2>2023/04/07</h2>
+
+  <li>
+    Added support for abortable requests. See <a href="https://opensource.adobe.com/acc-js-sdk/abortRequest.html"> for more details.</a>
+  </li>
+  <li>
+    Fixed compilation of vanilla JS bundle
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.23</h1>
+  <h2>2023/03/02</h2>
+
+  <li>
+    Added support for abortable requests. See <a href="https://opensource.adobe.com/acc-js-sdk/abortRequest.html"> for more details.</a>
+  </li>
+  <li>
+    Added public function client.newSchema to create a new XtkSchema object from an XML document or element.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.22</h1>
+  <h2>2023/01/19</h2>
+
+  <li>
+    Fix enumeration default value support (XtkEnumeration class). When an enumertion as a default value ('default' attribute of the enumeration)
+    object, this value should match the 'name' attribute of one of the enumeration values, not the 'value' attribute.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.21</h1>
+  <h2>2023/01/18</h2>
+
+  <li>
+    Extended XtkSchemaNode class with dbEnum attribute.
+  </li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.20</h1>
+  <h2>2023/01/11</h2>
+  
+  <li>
+    Upgrade json5 dependency from 2.2.1 to 2.2.3 to fix a vulnerability
+  </li>
+
+  <li>
+    Add support for asynchronous caches. The signature of cache objects (Cache, MethodCache,
+    OptionCache, XtkEntityCache, SafeStorage) have changed to asynchronous functions.
+    However, the delegate object used to configure custom caches now support either synchronous
+    or async results. See the <a href="https://opensource.adobe.com/acc-js-sdk/caches.html">Cache documentation for more details</a>
+  </li>
+  <li>
+    Ability to configure the prefix to use for the cached objects. Default to a string containing
+    the SDK version and instance domain.
+  </li>
+</section>
+
+
+<section class="changelog"><h1>Version 1.1.19</h1>
+  <h2>2022/12/21</h2>
+  
+  <li>Add the X-Session-Token custom header to all SOAP and API calls</li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.18</h1>
+  <h2>2022/12/20</h2>
+  
+  <li>Automatically remove from local storage key items which correspond to previous versions of the SDK.</li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.17</h1>
+  <h2>2022/12/06</h2>
+  
+  <li>Fix a bug in schemas: the editType property of a schema node was not set properly (internal attribute is named "edit" but property exposed by the API is "editType")</li>
+  <li>Fix a bug with encoding of the SOAP urls: query parameter was not escaped properly</li>
+  <li>Add observer callbacks before and after SOAP calls (onBeforeCall, onAfterCall) which allow to intercept SOAP calls and modify SOAP call parameters and results. See the "Method Interception" section in <a href="https://opensource.adobe.com/acc-js-sdk/observability.html">the observability documentation</a> for more details</li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.16</h1>
+  <h2>2022/11/29</h2>
+  
+  <li>Added support for xtk:job interface and job-related methods. See <a href="https://opensource.adobe.com/acc-js-sdk/xtkJob.html">Jobs documentation</a> for more details</li>
+</section>
+
+
+<section class="changelog"><h1>Version 1.1.15</h1>
+  <h2>2022/11/28</h2>
+  
+  <li>Fix an issue with SimpleJson serialization. See <a href="https://opensource.adobe.com/acc-js-sdk/simpleJson.html">SimpleJson documentation</a> for more details, and in particular the <b>Compatibility Notes</b> section</li>
+  <li>Fix credentials passing for fileUpload and getReportData methods. This is still a temporary fix until those APIs are made IMS compatible.</li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.14</h1>
+  <h2>2022/11/25</h2>
+  
+  <li>Fix a bug calling the nms:seedMember#getAsModel method. This method starts with a lower case letter (unlike other methods which start with an upper case) which was not propertly handled by the SDK</li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.13</h1>
+  <h2>2022/11/24</h2>
+  
+  <li>Fix a bug with file upload API: API call payload was not passed with the right property. The transport interface uses the "data" property and not the "body" property</li>
+  <li>Add "getReportData" API to fetch the data use to create a particular report</li>
+  <li>Add unit test to check that schema nodes mapped as both xml and sql are properly handled (as SQL)</li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.12</h1>
+  <h2>2022/11/16</h2>
+  
+  <li>Fix an issue with localization ids: do not generate localization ids for empty labels or descriptions</li>
+  <li>Add the instanceLocale attribute in the CurrentLogin object. This attribute returns the instance locale</li>
+</section>
+
+<section class="changelog"><h1>Version 1.1.11</h1>
+<h2>2022/11/09</h2>
+
+<li>Correction of a false positive session expiration error. The processing of the session expiration error (code XSV-350008) was incorrect as it was searching for the error code anywhere in an API response body instead of checking for an actual error</li>
+</section>
+
+
+<section class="changelog"><h1>Version 1.1.10</h1>
+<h2>2022/10/13</h2>
+
+<li>Added support for <b>primaryKey</b> type
+<li>Added support for the <b>xtk:persist</b> interface
+<li>Added support for schema belongsTo attribute
+</section>
+<section class="changelog"><h1>Version 1.1.9</h1>
+<h2>2022/10/11</h2>
+
+<li>Added support for schema visibleIf attribute
+</section>
+<section class="changelog"><h1>Version 1.1.8</h1>
+<h2>2022/10/03</h2>
+
+<li>Added translation ids <b>labelLocalizationId</b>, <b>descriptionLocalizationId</b>, <b>labelSingularLocalizationId</b>) for <b>XtkSchema</b>, <b>XtkSchemaNode</b>, <b>XtkEnumerationValue</b> and <b>XtkEnumeration</b>
+</section>
+<section class="changelog"><h1>Version 1.1.7</h1>
+<h2>2022/08/30</h2>
+
+<li>New listener interface to be notified of internal events from the SDK. Can be used to integrate with observability frameworks. See the "Observers" section of the README file.
+<li>Experimental file upload feature. Will require server-side changes to work, and is currently limited to be used with browsers only.
+</section>
+<section class="changelog"><h1>Version 1.1.6</h1>
+<h2>2022/08/19</h2>
+
+<li>New auto-refresh mechanism to keep schemas and option caches up-to-date. See <b>client.startRefreshCaches</b> and <b>client.stopRefreshCaches</b> functions.
+</section>
+<section class="changelog"><h1>Version 1.1.5</h1>
+<h2>2022/07/07</h2>
+
+<li>The SOAP method name was not showing up properly in the Chrome console
+</section>
+<section class="changelog"><h1>Version 1.1.4</h1>
+<h2>2022/07/07</h2>
+
+<li>Added <b>application.version</b> which returns the server version in the format major.minor.servicePack (ex: 8.2.10)
+<li>Added the ability to push down parameters to the SOAP and transport layers. See the pushDown section of the readme file.
+<li>The pushDown mechanism can be used to simply overwrite the request timeout, either globally or at the method level
+<li>Publicly export the HttpError class so that custom transports can be written more safely. A failure during transport should return an HttpError object
+<li>By default, the SOAP method name is now added in the URLs for better troubleshooting
+</section>
+<section class="changelog"><h1>Version 1.1.3</h1>
+<h2>2022/05/30</h2>
+
+<li>Fix a bug in client.hasPackage which was returning an incorrect result when passed a single parameter (it would always return false). Fixed the corresponding unit test too.
+<li>Fix a bug causing API calls having a input parameter of type "int" to fail. Usually the type is described as "long", but sometimes "int" is used instead, such as, for instance, in the <b>nms:extAccount#UpdateMCSynchWkf</b> method.
+<li>When using XML representations and DOMDocument method parameter type, the SDK expects to be passed an actual DOM document. Now it supports being passed a DOM element too. This is a common case when using the <b>nms:delivery#createFromModel</b> API followed by a <b>xtk:session#Write</b> API call.
+<li>Avoid the error 'Cannot transform entity to xml because no XML root name was given' by using SOAP method parameter name as the default for XML document root when no other root is available
+<li>Document how to set the password of an external account
+<li>By default, SDK will send additional HTTP headers to help troubleshooting and usage tracking
+<li>Add the ability to pass extra HTTP headers to API calls, either globally (to all HTTP headers), or locally, i.e. for a specific method
+<li>Remove .vscode folder from the sources
+<li>Example for xtkBuilder.installPackage API
+<li>For APIs which have parameters of type DOMElement and which are called using XML, support passing either a DOMElement or a DOMDocument
+
+</section>
+<section class="changelog"><h1>Version 1.1.2</h1>
+<h2>2022/03/22</h2>
+
+<li>Add support for choosing the representation (XML or JSON) at the method level using NLWS.xml or NLWS.json.
+</section>
+<section class="changelog"><h1>Version 1.1.1</h1>
+<h2>2022/03/10</h2>
+
+<li>Fixed an issue with encoding: make the default charset encoding to be UTF-8 (https://github.com/adobe/acc-js-sdk/issues/26)
+</section>
+<section class="changelog"><h1>Version 1.1.0</h1>
+<h2>2022/03/05</h2>
+
+Changes in the metadata api (<b>application.getSchema</b>) which was not completely implemented. While this API is meant to be largely compatible with the [ACC JS API](https://docs.adobe.com/content/help/en/campaign-classic/technicalresources/api/c-Application.html), it's not always possible to do so because of the asynchronous nature of the SDK. The JS API is executed inside the Campaign application server can will synchronously and transparently fetch schemas as needed. Howerer the SDK runs outside of the Campaign server. It will synchronously and transparently fetch schemas as needed, but this will be done adynchronously. 
+
+Differences are document in the <b>Application</b> section of the README.
+
+<li>Provide array and map access to XtkSchemaKey.fields, 
+<li>The order of children of a node has been changed. Beore 1.1.0, it was attributes, then elements. After 1.1.0, it's the order defined in the schema XML
+<li>New application.getEnumeration function to retreive an enumeration
+<li>Removed the XtkSchemaNode.hasChild function
+<li>Support for ref nodes and links: XtkSchemaNode.refTarget(), XtkSchemaNode.linkTarget() functions
+<li>Reviews XtkSchemaNode.findNode() function to support links, refs, ANY type, etc. and is now asynchronous
+<li>The name attribute of enumerations (<b>XtkEnumeration.name</b>) is now the fully qualified name of the enumeration, i.e. is prefixed by the schema id
+</section>
+<section class="changelog"><h1>Version 1.0.9</h1>
+<h2>2022/03/02</h2>
+
+<li>Ability to invoke SOAP calls dynamically with parameters computed at invocation time by a delegate function
+<li>Fixed bug in XPath constructor which now supports expanded paths, i.e. xpaths such as <b>[@recipient-id]</b>.
+<li>EntityAccessor: change the heuristic to detect XML types: use "nodeType" and "tagName" functions instead of "insertAdjacentElement" (which was not always working in the context of a React application)
+<li>Add new escaping functions: <b>escapeForLike</b>, <b>expandXPath</b>, <b>unexpandXPath</b>, <b>xtkConstText</b>
+<li>New XtkCaster methods: <b>asDatetime</b> (alias to <b>asTimestamp</b>), <b>isStringType</b>, and <b>isNumericType</b>
+<li>Metadata API (application.getSchema)
+  <li>keys have a <b>isInternal</b> internal attribute which was mistakenly using the "string" type. It's now correctly using the boolean type.
+  <li>Added missing attributes on the XtkSchema: md5
+  <li>Added missing attributes on the XtkSchemaNode objects: dataPolicy, editType folderModel, enumerationImage, size, userEnumeration, hasUserEnumeration, isCollection, 
+    isAdvanced, isAnyType, isLink, hasEnumeration, hasSQLTable, SQLName, SQLTable, isMappedAsXML, isTemporaryTable, isElementOnly, isDefaultOnDuplicate, isExternalJoin, 
+    isMemo, isMemoData, isBlob, isCDATA, isNotNull, isRequired, isSQL, PKSequence, revLink, isCalculated, expr, isAutoIncrement, isAutoPK,  isAutoUUID, isAutoStg, packageStatusString, and packageStatus
+  <li>Attribute type defaults to string if not set
+  <li>Removed userDescription attribut from schema nodes (only available at the schema level)
+  <li>Changed the toString function to use 4 spaces instead of 3 for indentation and display node label and internal name
+  <li>When label or description is missing from schema nodes or from enumerations, they default to the name value
+  <li>application.getSchema now uses a in-memory cache
+
+For breaking changes see the [migration guide](MIGRATION.md)
+
+</section>
+<section class="changelog"><h1>Version 1.0.7</h1>
+<h2>2022/01/24</h2>
+<li>Added a hook <b>refreshClient</b> on connection parameters. This is a callback called when an authentication token expires. It can be used to implement reconnection logic
+<li>New attributes on the schema API (application.getSchema)
+  <li>The <b>enum</b> attribute of a schema node returns the corresponding enum attribute, i.e. the enumeration name
+  <li>The <b>target</b> attribute of a schema node (of type link) returns the target (schema id) of the link
+  <li>The <b>integrity</b> attribute of a schema node (of type link) returns the link integrity ("define", "own", etc.)
+<li>Added a github workflow for code analysis (CodeQL) to detect more potential issues before release
+<li>Upgrade dependencies to fix some vulnerabilities
+<li>Add new conversion functions in XtkCaster to support for int, timespan, uuid, html and blob
+</section>
+<section class="changelog"><h1>Version 1.0.6</h1>
+<h2>2021/11/03</h2>
+<li>New ofBearerToken authentication for IMS access token
+<li>Fix a small issue in the compile script which did not create the dist folder if it was missing
+<li>Fix an intermittent bug when running the SDK in the browser and when using local storage cache. The schema cache and method cache 
+  should contain XML representation of Campaign schemas and methods. Before it is put in local storage, data needs to be serialized
+  as text. This was only working of JavaScript objects, but DOM elements were not being serialied causing various errors when
+  using the cache later
+</section>
+<section class="changelog"><h1>Version 1.0.5</h1>
+<h2>2021/10/09</h2>
+<li>Fix an issue in the logon() function which was not always returning a promise. Some authentication methods such as SessionToken we returning synchronously. Made it so that logon always returns a promise. This should not be a breaking change as logon does not actually return a value
+<li>Refactor caches (Options cache, Schemas cache, and Methods cache) to use a generic cache class
+<li>Make sure options parameter of ConnectionParameters constructor is not modified
+<li>Added a persistent cache for schemas, methods, and options using the browser localStorage by default
+<li>Make sure X-Security-Token header is hidden as well as session token cookies
+<li>Added jshint configuration and fixed warnings reported by jshint
+<li>Fixed vulnerability in ansi-regex; upgrade jest-junit to version 13 to fix
+<li>Small jsdoc improvements
+</section>
+<section class="changelog"><h1>Version 1.0.4</h1>
+<h2>2021/10/07</h2>
+<li>Fix a bug which caused XML text and cdata elements to be skipped during SimpleJson transformation
+<li>Make sure passwords are not logged (replace with "***") when activating traces
+</section>
+<section class="changelog"><h1>Version 1.0.3</h1>
+<h2>2021/10/06</h2>
+<li>Added the <b>sdk.ip()</b> function to retreive the ouptbound IP to be whitelisted to access Campaign
+<li>New <b>ofSecurityToken</b> authentication method for the client-side SDK, which can be used to log on with a security token only. The session token will be passed automatically by the browser.
+</section>
+<section class="changelog"><h1>Version 1.0.2</h1>
+<h2>2021/09/17</h2>
+<li>Dummy version to fix NPM build. Need to have the version in both package.json and a commit message to be "Release x.y.z" in master
+</section>
+<section class="changelog"><h1>Version 1.0.1</h1>
+<h2>2021/09/16</h2>
+<li>Dummy version to fix NPM build
+</section>
+<section class="changelog"><h1>Version 1.0.0</h1>
+<h2>2021/09/16</h2>
+<li>Support for a simpler flavor of JSON (see SimpleJson vs. BadgerFish) which is now the default
+<li>New <b>EntityAccessor</b> object to access entity properties regardless of their representation
+<li>Finalize the implementation to support int64
+<li>Add 100% coverage for all tests
+<li>Make some members of the Client object private to clarify what is the public API
+<li>Fixed bug in JSON serialization for XML elments having an attribute named "length" (see <b>isArray</b> utility)
+<li>New <b>application</b> object to mimic the public SDK (can be accessed via <b>client.application</b>)
+<li>New schema API (<b>application.getSchema</b>) to easily navigate schemas
+<li>New Campaign enumeration constants (<b>campaign.js</b>) for better readability of code using numerical enumeration values
+<li>BadgerFish objects now have a <b>__representation = "BadgerFish"</b> attribute to easily distinguish between BadgerFish & SimpleJson
+<li>Logon will fail if server returns a payload which does not contain a <b>userInfo</b> object
+<li>New <b>setOption</b> function which allows to set (and cache) an option value
+<li>Deprecated the <b>getSecretKeyCipher</b> function which may fail on instances where Vault is setup. Use <b>ConnectionParameters.ofExternalAccount</b> instead
+<li><b>getEntityIfMoreRecent</b> now takes an additional parameter which allows to specify and force a representation (xml, json...)
+<li>New helper function <b>DomUtil.isArray</b> to test if a JavaScript object is an array
+<li>New <b>EntityAccessor</b> object which allows to get attributes and child elements from xml or json objects, regardless of their representation
+<li>New <b>escapeXtk</b> function to escape literal values in Xtk expression. Can be used as a function or as a tagged template literal
+<li>New function <b>XtkCaster._variantStorageAttribute</b> which returns the name of a schema attribute used to store variant value types. The name of the attribute depends on the type: stringValue, longValue, etc.
+<li>Support for non static method that mutate the object on which they apply. For instance, the <b>xtk:queryDef#SelectAll</b>
+<li>Added samples in the samples/ folder
+<li>Support of logon with session token only with sdk.ConnectionParameters.ofSessionToken
+<li>Error management. Return a proper CampaignException upon failure with attributes that can be used to retreive error details (both http and soap)
+<li>Message Center API and examples
+<li>Added support for anonymous authentication via the "ofAnonymousUser" credentials function
+<li>Implement SDK functions for /r/test, /nl/jsp/ping.jsp, nl/jsp/mcPing.jsp (health check functions)
+<li>All HTTP request now add a user agent string identifying the SDK and it's version
+<li>CampaignException has been improved to report errors on both SOAP and HTTP requests. It's now defined in <b>campaign.js</b>
+<li>Added full jsdoc documentation of the SDK (run with <b>npm run jsdoc</b>). Result is saved in the <b>doc/jsdoc</b> folder
+<li>Use "strict" mode
+<li>Use E6 classes instead of prototype based inheritance
+<li>Using <b>axios</b> as the default protocol instead of <b>request-promise-native</b> which is deprecated
+<li>Added the notion of observer that can be called on any SOAP or HTTP request
+<li>SOAP calls now have an "internal" flag, which indicates if the SOAP calls comes from the framework itself (for example, the framework will load schemas) or from a client app
+<li>All session and security tokens are removed from logs 
+<li>Moved to DomUtil.isArray helper function to a new Utils package (internal)
+<li>Fixed many tests which were not executed corresctly (assertion was not executed, leading to think the test was successful)
+<li>Fixed CVE-2021-23343 in dependencies
+
+_Breaking changes in 1.0.0_
+<li>The default representation is now <b>SimpleJson</b> instead of <b>BadgerFish</b>
+<li>Changes in the <b>sdk.init</b>, <b>Client</b> constructor, and <b>logon</b> functions. Now using <b>ConnectionParameters</b> and <b>Credentials</b> objects to configure a Campaign connection
+<li>Client object members are now private: access to representation, etc. attributes is not allowed anymore except for <b>NLWS</b>, <b>XtkCaster</b>, and <b>DomUtil</b>
+<li>Access to the <b>sessionInfo</b> object after <b>logon</b> can be done via the new <b>getSessionInfo</b> call
+<li>Options cache internal strucutre change: option values in the cache are now object literals containing the option value, type, and raw value (which may not be casted to the expected type yet)
+<li>Connecting to mid-sourcing (or other Campaign instances which are defined by an external account) is now done with the <b>ConnectionParameters.ofExternalAccount</b> function. As a consequence, <b>getSecretKeyCipher</b> is now private and deprecated
+<li>CampaignException object signature changed (but was not previously exposed)
+<li>The client-side bundle is now generated in the <b>dist/bundle.js</b> file instead of <b>bundle.js</b>
+<li>The main global object for the client SDK is now <b>document.accSDK</b> and not <b>accSDK</b>
+<li>The client.traceSOAPCalls() function is now named client.traceAPICalls because it traces both SOAP and HTTP calls
+
+---
+</section>
+<section class="changelog"><h1>Version 0.1.24</h1>
+<h2>2021/09/16</h2>
+<li>Fix potential security vulnerabilities in the dependencies
+</section>
+<section class="changelog"><h1>Version 0.1.23</h1>
+<h2>2021/07/27</h2>
+<li>Support for int64 type (represented as a string to avoid rounding errors)
+<li>Fix issue with the SoapAction header for interface methods. When calling a method which is defined on an interface (for instance xtk:persist), the SoapAction
+  header must use the interface id and not the schema id. For instance, when one calls the xtk:session Write method, one should call NLWS.xtkSession.Write, but
+  the SoapAction header must be "xtk:persist#Write" and not "xtk:session#Write" for the call to complete successfully. In older SDK versions, one had to call
+  NLWS.xtkPersist.Write which would only work if the xtk:persist interface schema was cached before. As there's no xtk:schema entity for the interfaces, the only
+  way to cache such an interface is to have previously called a method on xtk:session. This call will indirectly cache the xtk:session schema and its interfaces,
+  hence xtk:persist. From SDK 0.1.23 on, while the previous (incorrect) syntax NLWS.xtkPersist.Write still works, it's recommended to use NLWS.xtkSession.Write
+<li>Upgrade 3rd parties (browserslist, hosted-git-info, lodash, ws) to fix vulnerabilities
+</section>
+<section class="changelog"><h1>Version 0.1.22</h1>
+<h2>2021/02/23</h2>
+<li>Update node-notifier library (used by jest) to version 8.0.1 to fix a possible injection
+</section>
+<section class="changelog"> <h1>0.1.20</h1>
+<h2>Add client.hasPackage function to test if </h2> package is installed or an instance or not (https://github.com/adobe/acc-js-sdk/issues/5)
+</section>
+<section class="changelog"> <h1>0.1.3</h1>
+<h2>Bug fixe</h2>
+<li>Query returning empty result should return null when getIfExists operation, should fail when using get operation, and should return an empty array with select operation (https://github.com/adobe/acc-js-sdk/issues/3)
+</section>
+<section class="changelog"> <h1>0.1.2</h1>
+<h2><li>Use github action to automatically publ</h2>sh to npm when one pushes a commit with the message "Release 1.2.3"
+</section>
+<section class="changelog"> <h1>0.1.1</h1>
+<h2>Bug fixe</h2>
+<li>Query in select mode should always return an array, even if result is empty or one one row (https://github.com/adobe/acc-js-sdk/issues/1)
+
+</section>
+<section class="changelog"> <h1>0.1.0</h1>
+<h2>Initial version</h2>
+</section>

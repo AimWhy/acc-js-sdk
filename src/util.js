@@ -51,18 +51,7 @@ class Util {
    * @returns {boolean} true if the object is an array
    */
   static isArray(obj) {
-    if (obj === null || obj === undefined) return false;
-    // JavaScript arrays are objects
-    if (typeof obj != "object") return false;
-    // They also have a length property. But checking the length is not enough
-    // since, it can also be an object litteral with a "length" property. Campaign
-    // schema attributes typically have a "length" attribute and are not arrays
-    if (obj.length === undefined || obj.length === null) return false;
-    // So check for a "push" function
-    if (obj.push === undefined || obj.push === null) return false;
-    if (typeof obj.push != "function") 
-        return false;
-    return true;
+    return Array.isArray(obj);
   }
 
   // Helper function for trim() to replace text between 2 indices
@@ -98,7 +87,8 @@ class Util {
     }
     if (typeof obj == "object") {
       for (const p in obj) {
-        if (p.toLowerCase() === "x-security-token")
+        const lowerP = p.toLowerCase();
+        if (lowerP === "x-security-token" || lowerP === "x-session-token")
           obj[p] = "***";
         else if (p === "Cookie") {
           var index = obj[p].toLowerCase().indexOf("__sessiontoken");
@@ -126,12 +116,48 @@ class Util {
       // Hide session tokens
       obj = this._removeBetween(obj, "<Cookie>__sessiontoken=", "</Cookie>");
       obj = this._removeBetween(obj, "<X-Security-Token>", "</X-Security-Token>");
+      obj = this._removeBetween(obj, "<X-Session-Token>", "</X-Session-Token>");
       obj = this._removeBetween(obj, '<sessiontoken xsi:type="xsd:string">', '</sessiontoken>');
       obj = this._removeBetween(obj, "<pstrSessionToken xsi:type='xsd:string'>", "</pstrSessionToken>");
       obj = this._removeBetween(obj, "<pstrSecurityToken xsi:type='xsd:string'>", "</pstrSecurityToken>");
       obj = this._removeBetween(obj, '<password xsi:type="xsd:string">', '</password>');
     }
     return obj;
+  }
+
+  /**
+   * Get Schema id from namespace (find first upper case letter)
+   * @param {string} namespace a SDK namespace, i.e. xtkWorkflow, nmsDelivery, etc.
+   * @return {string} the corresponding schema id, i.e. xtk:workflow, nms:delivery, etc.
+   */
+  static schemaIdFromNamespace(namespace) {
+    var schemaId = "";
+    for (var i=0; i<namespace.length; i++) {
+        const c = namespace[i];
+        if (c >='A' && c<='Z') {
+            schemaId = schemaId + ":" + c.toLowerCase() + namespace.substr(i+1);
+            break;
+        }
+        schemaId = schemaId + c;
+    }
+    return schemaId;
+  }
+
+  /**
+   * Test if an object is a promise
+   * @param {*} object the object to test
+   * @returns {boolean} if the object is a promise
+   */
+  static isPromise(object) {
+    if (object === null || object === undefined) return false;
+    if (object.then && (typeof object.then === "function")) return true;
+    return false;
+  }
+
+  static asPromise(object) {
+    if (this.isPromise(object)) 
+      return object;
+    return Promise.resolve(object);
   }
 }
 
@@ -168,14 +194,19 @@ class ArrayMap {
       });
   }
 
-  _push(key, value) {
+  _push(key, value, withoutIndexing) {
       let isNumKey = false;
+      let updateIndex = -1;
+
       if (key) {
         // reserved keyworkds
         const isReserved = key === "_items" || key === "length" || key === "_push" || key === "forEach" || key === "map" || key === "_map" || key === "get" || key === "find" || key === "flatMap" || key === "filter";
 
         // already a child with the name => there's a problem with the schema
-        if (!isReserved && this[key]) throw new Error(`Failed to add element '${key}' to ArrayMap. There's already an item with the same name`);
+        // it seems the current behavior is to replace the existing item with the new one
+        if (!isReserved && this[key]) {
+          updateIndex = this._items.indexOf(this[key]);
+        }
 
         // Set key as a enumerable property, so that elements can be accessed by key, 
         // but also iterated on with a for ... in loop
@@ -192,17 +223,22 @@ class ArrayMap {
         }
       }
 
-      if (!isNumKey) {
+      if (!withoutIndexing && !isNumKey) {
         // Set the index property so that items can be accessed by array index.
         // However, make it non-enumerable to make sure indexes do not show up in a for .. in loop
-        Object.defineProperty(this, this._items.length, {
+        const numKey = updateIndex == -1 ? this._items.length : updateIndex;
+        Object.defineProperty(this, numKey, {
           value: value,
           writable: false,
           enumerable: false,
+          configurable: true, // Allow to redefine the property later in case there's a duplicate key
         });
       }
       // Add to array and set length
-      this._items.push(value);
+      if (updateIndex == -1)
+        this._items.push(value);
+      else
+        this._items[updateIndex] = value;
       this.length = this._items.length;
   }
 

@@ -45,13 +45,37 @@ describe('Application', () => {
             });
 
             it("Duplicate root nodes", () => {
-                expect(() => {
-                    var xml = DomUtil.parse(`<schema namespace='nms' name='recipient'>
-                                                <element name='recipient' label='Recipients'/>
-                                                <element name='recipient' label='Recipients2'/>
-                                            </schema>`);
-                    newSchema(xml);    
-                }).toThrow("Failed to add element 'recipient' to ArrayMap. There's already an item with the same name");
+                var xml = DomUtil.parse(`<schema namespace='nms' name='recipient'>
+                                            <element name='recipient' label='Recipients'/>
+                                            <element name='recipient' label='Recipients2'/>
+                                        </schema>`);
+                var schema = newSchema(xml);
+                var root = schema.root;
+                expect(root).toBeTruthy();
+                expect(root.name).toBe("recipient");
+                expect(root.label).toBe("Recipients2");
+            });
+
+            it("Duplicate enumeration value", () => {
+                const xml = DomUtil.parse(`<schema namespace='nms' name='recipient'>
+                                            <enumeration basetype="string" name="AKA">
+                                                <value name="PC" value="1"/>
+                                                <value name="CL2" value="2"/>
+                                                <value name="CL3" value="3"/>
+                                                <value name="Null" value="4"/>
+                                                <value name="Null" value="NULL"/>
+                                            </enumeration>
+                                            <element name='recipient' label='Recipients'/>
+                                        </schema>`);
+                const schema = newSchema(xml);
+                const enumerations = schema.enumerations;
+                const enumeration = enumerations.AKA.values;
+                expect(enumeration.length).toBe(4);
+                expect(enumeration[0].name).toBe("PC");
+                expect(enumeration[1].name).toBe("CL2");
+                expect(enumeration[2].name).toBe("CL3");
+                expect(enumeration[3].name).toBe("Null");
+                expect(enumeration[3].value).toBe("NULL");
             });
 
             it("Should find root node", () => {
@@ -138,6 +162,25 @@ describe('Application', () => {
                 var root = schema.root;
                 expect(!!root.children.get("@email")).toBe(true);
                 expect(!!root.children.get("email")).toBe(false);
+            });
+        });
+
+        describe('dbEnum', () => {
+            it("Should find dbEnum attribute", () => {
+                var xml = DomUtil.parse(`<schema namespace='nms' name='recipient'>
+                                            <element name='recipient' label='Recipients'>
+                                                <attribute dbEnum="operationNature" desc="Nature of the campaign" label="Nature"
+               length="64" name="nature" type="string"/>
+                                            </element>
+                                        </schema>`);
+                var schema = newSchema(xml);
+                var root = schema.root;
+                expect(!!root.children.get("@nature")).toBe(true);
+                var attribute = root.children["@nature"];
+                expect(attribute).not.toBeNull();
+                expect(attribute.dbEnum).toBe("operationNature");
+                expect(attribute.type).toBe("string");
+                expect(attribute.length).toBe(64);
             });
         });
 
@@ -326,6 +369,19 @@ describe('Application', () => {
                 expect(enumerations[1].label).toBe("Status code");
             });
 
+            it("Should support duplicate  enumerations", () => {
+                var xml = DomUtil.parse(`<schema namespace='nms' name='recipient'>
+                                            <enumeration name="duplicated" basetype="byte"/>
+                                            <enumeration name="duplicated" basetype="byte"/>
+                                            <element name='recipient' label='Recipients'></element>
+                                        </schema>`);
+                var schema = newSchema(xml);
+                var enumerations = schema.enumerations;
+                expect(enumerations.duplicated.dummy).toBeFalsy();
+                expect(enumerations[0].label).toBe("Duplicated");
+                expect(enumerations[1]).toBeUndefined();
+            });
+
             it("Should test images", () => {
                 var xml = DomUtil.parse(`<schema namespace='nms' name='recipient'>
                                             <enumeration name="gender" basetype="byte">
@@ -448,7 +504,7 @@ describe('Application', () => {
 
             it("Should support default values", () => {
                 var xml = DomUtil.parse(`<schema namespace='nms' name='recipient'>
-                                            <enumeration basetype="byte" name="instanceType" default="1">
+                                            <enumeration basetype="byte" name="instanceType" default="master">
                                                 <value label="One-off event" name="single" value="0"/>
                                                 <value label="Reference recurrence" name="master" value="1"/>
                                                 <value label="Instance of a recurrence" name="instance" value="2"/>
@@ -473,7 +529,7 @@ describe('Application', () => {
                         <GetEntityIfMoreRecentResponse xmlns='urn:wpp:default' SOAP-ENV:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'>
                             <pdomDoc xsi:type='ns:Element' SOAP-ENV:encodingStyle='http://xml.apache.org/xml-soap/literalxml'>
                                 <schema name="profile" namespace="nms" xtkschema="xtk:schema">
-                                    <enumeration basetype="byte" name="instanceType" default="1" label="Instance type">
+                                    <enumeration basetype="byte" name="instanceType" default="master" label="Instance type">
                                         <value label="One-off event" name="single" value="0"/>
                                         <value label="Reference recurrence" name="master" value="1"/>
                                         <value label="Instance of a recurrence" name="instance" value="2"/>
@@ -498,7 +554,7 @@ describe('Application', () => {
                         <GetEntityIfMoreRecentResponse xmlns='urn:wpp:default' SOAP-ENV:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'>
                             <pdomDoc xsi:type='ns:Element' SOAP-ENV:encodingStyle='http://xml.apache.org/xml-soap/literalxml'>
                                 <schema name="profile" namespace="nms" xtkschema="xtk:schema">
-                                    <enumeration basetype="byte" name="instanceType" default="1" label="Instance type">
+                                    <enumeration basetype="byte" name="instanceType" default="master" label="Instance type">
                                         <value label="One-off event" name="single" value="0"/>
                                         <value label="Reference recurrence" name="master" value="1"/>
                                         <value label="Instance of a recurrence" name="instance" value="2"/>
@@ -539,7 +595,7 @@ describe('Application', () => {
                         <GetEntityIfMoreRecentResponse xmlns='urn:wpp:default' SOAP-ENV:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'>
                             <pdomDoc xsi:type='ns:Element' SOAP-ENV:encodingStyle='http://xml.apache.org/xml-soap/literalxml'>
                                 <schema name="profile" namespace="nms" xtkschema="xtk:schema">
-                                    <enumeration basetype="byte" name="instanceType" default="1" label="Instance type">
+                                    <enumeration basetype="byte" name="instanceType" default="master" label="Instance type">
                                         <value label="One-off event" name="single" value="0"/>
                                         <value label="Reference recurrence" name="master" value="1"/>
                                         <value label="Instance of a recurrence" name="instance" value="2"/>
@@ -565,7 +621,7 @@ describe('Application', () => {
                         <GetEntityIfMoreRecentResponse xmlns='urn:wpp:default' SOAP-ENV:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'>
                             <pdomDoc xsi:type='ns:Element' SOAP-ENV:encodingStyle='http://xml.apache.org/xml-soap/literalxml'>
                                 <schema name="profile" namespace="nms" xtkschema="xtk:schema">
-                                    <enumeration basetype="byte" name="instanceType" default="1" label="Instance type">
+                                    <enumeration basetype="byte" name="instanceType" default="master" label="Instance type">
                                         <value label="One-off event" name="single" value="0"/>
                                         <value label="Reference recurrence" name="master" value="1"/>
                                         <value label="Instance of a recurrence" name="instance" value="2"/>
@@ -606,7 +662,7 @@ describe('Application', () => {
                         <GetEntityIfMoreRecentResponse xmlns='urn:wpp:default' SOAP-ENV:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'>
                             <pdomDoc xsi:type='ns:Element' SOAP-ENV:encodingStyle='http://xml.apache.org/xml-soap/literalxml'>
                                 <schema name="profile" namespace="nms" xtkschema="xtk:schema">
-                                    <enumeration basetype="byte" name="instanceType" default="1" label="Instance type">
+                                    <enumeration basetype="byte" name="instanceType" default="master" label="Instance type">
                                         <value label="One-off event" name="single" value="0"/>
                                         <value label="Reference recurrence" name="master" value="1"/>
                                         <value label="Instance of a recurrence" name="instance" value="2"/>
@@ -680,6 +736,43 @@ describe('Application', () => {
                     const enumeration = await client.application.getSysEnum("nms:recipient:instanceType", "nms:profile");
                     expect(enumeration).toBeFalsy();
                 });
+            });
+
+            it("Should support numeric enumeration with implicit value", async () => {
+                // Example in xtk:dataTransfer:decimalCount
+                const client = await Mock.makeClient();
+                client._transport.mockReturnValueOnce(Mock.LOGON_RESPONSE);
+                await client.NLWS.xtkSession.logon();
+                client._transport.mockReturnValueOnce(Promise.resolve(`<?xml version='1.0'?>
+                <SOAP-ENV:Envelope xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:ns='urn:wpp:default' xmlns:SOAP-ENV='http://schemas.xmlsoap.org/soap/envelope/'>
+                <SOAP-ENV:Body>
+                    <GetEntityIfMoreRecentResponse xmlns='urn:wpp:default' SOAP-ENV:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'>
+                        <pdomDoc xsi:type='ns:Element' SOAP-ENV:encodingStyle='http://xml.apache.org/xml-soap/literalxml'>
+                            <schema name="dataTransfer" namespace="xtk" xtkschema="xtk:schema">
+                                <enumeration name="decimalCount" basetype="short">
+                                    <value value="-1" name="all" label="All"/>
+                                    <value name="0"/>
+                                    <value name="1"/>
+                                    <value name="2"/>
+                                    <value name="3"/>
+                                    <value name="4"/>
+                                    <value name="5"/>
+                                    <value name="6"/>
+                                    <value name="7"/>
+                                    <value name="8"/>
+                                    <value name="9"/>
+                                </enumeration>
+                            </schema>
+                        </pdomDoc>
+                    </GetEntityIfMoreRecentResponse>
+                </SOAP-ENV:Body>
+                </SOAP-ENV:Envelope>`));
+                const enumeration = await client.application.getSysEnum("decimalCount", "xtk:dataTransfer");
+                expect(enumeration.label).toBe("DecimalCount");
+                const values = enumeration.values;
+                expect(values["all"].value).toBe(-1)
+                expect(values["0"].value).toBe(0)
+                expect(values["1"].value).toBe(1)
             });
         });
 
@@ -1097,7 +1190,6 @@ describe('Application', () => {
                     </GetEntityIfMoreRecentResponse>
                 </SOAP-ENV:Body>
                 </SOAP-ENV:Envelope>`));
-
                 const nodes = await link.joinNodes();
                 expect(nodes).toMatchObject([]);
                 const reverseLink = await link.reverseLink();
@@ -1253,6 +1345,44 @@ describe('Application', () => {
                 var node = await schema.findNode("address");
                 var target = await node.refTarget();
                 expect(target).toBeFalsy();
+            });
+        });
+
+        describe("visibleIf", () => {
+            
+            it("Should extract visibleIf", async () => {
+                var xml = DomUtil.parse(`<schema namespace='nms' name='recipient'>
+                    <element name='recipient' label='Recipients'>
+                        <element name="myAddress" visibleIf="HasPackage('pkg')"/>
+                    </element>
+                </schema>`);
+                var schema = newSchema(xml);
+                // Pointing to the node with ref itself => return it
+                var node = await schema.root.findNode("myAddress");
+                expect(node).toMatchObject({ name:"myAddress", visibleIf:"HasPackage('pkg')", childrenCount:0 });
+            });
+        });
+
+        describe("belongsTo", () => {
+            
+            it("Should extract belongsTo", async () => {
+                var xml = DomUtil.parse(`<schema namespace='nms' name='delivery'>
+                    <element name='delivery' label='Delivery'>
+                        <attribute belongsTo="nms:deliveryOperation" defOnDuplicate="true" enum="sandboxStatus" label="Status of inclusion in the provisional calendar" name="sandboxStatus" sqlname="iSandboxStatus" type="byte"/>
+                        <attribute belongsTo="cus:delivery" label="" length="255" name="hello" sqlname="sHello" type="string"/>
+                        <element advanced="true" desc="Memo field containing data stored as XML" label="XML memo" name="data" sqlname="mData" type="memo"/>
+                    </element>
+                </schema>`);
+                var schema = newSchema(xml);
+
+                var node = await schema.root.findNode("@sandboxStatus");
+                expect(node).toMatchObject({ name:"@sandboxStatus", belongsTo:"nms:deliveryOperation", childrenCount:0 });
+
+                var node = await schema.root.findNode("@hello");
+                expect(node).toMatchObject({ name:"@hello", belongsTo:"cus:delivery", childrenCount:0 });
+
+                var node = await schema.root.findNode("data");
+                expect(node).toMatchObject({ name:"data", belongsTo:"", childrenCount:0 });
             });
         });
 
@@ -1442,6 +1572,66 @@ describe('Application', () => {
                 </SOAP-ENV:Envelope>`));
                 const isoA3 = await recipient.root.findNode("country/@isoA3");
                 expect(isoA3).toBeFalsy();
+            });
+
+            it("Should not cache temp:group: schemas", async () => {
+                const client = await Mock.makeClient();
+                client._transport.mockReturnValueOnce(Mock.LOGON_RESPONSE);
+                await client.NLWS.xtkSession.logon();
+               
+                client._transport.mockReturnValueOnce(Mock.GET_XTK_QUERY_SCHEMA_RESPONSE);
+                client._transport.mockReturnValueOnce(Promise.resolve(`<?xml version='1.0'?>
+                      <SOAP-ENV:Envelope xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:ns='urn:xtk:queryDef' xmlns:SOAP-ENV='http://schemas.xmlsoap.org/soap/envelope/'>
+                        <SOAP-ENV:Body>
+                            <ExecuteQueryResponse xmlns='urn:xtk:queryDef' SOAP-ENV:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'>
+                                <pdomOutput xsi:type='ns:Element' SOAP-ENV:encodingStyle='http://xml.apache.org/xml-soap/literalxml'>
+                                <group expirationDate="" folder-id="1199" id="2200" label="testlist" name="LST260" schema="nms:recipient" type="1">
+                                  <extension label="email is not empty" mappingType="sql" name="query" namespace="temp">
+                                    <element advanced="false" dataSource="nms:extAccount:ffda" label="email is not empty" name="query" pkSequence="" sqltable="grp2200" unbound="false">
+                                      <compute-string expr=""/>
+                                      <key internal="true" name="internal">
+                                        <keyfield xpath="@id"/>
+                                      </key>
+                                      <attribute advanced="false" belongsTo="@id" label="Primary key" length="0" name="id" notNull="false" sql="true" sqlname="uId" type="uuid" xml="false"/>
+                                      <element advanced="false" externalJoin="true" label="Targeting dimension" name="target" revLink="" target="nms:recipient" type="link" unbound="false">
+                                        <join xpath-dst="@id" xpath-src="@id"/>
+                                      </element>
+                                    </element>
+                                  </extension>
+                                </group>
+                                </pdomOutput>
+                            </ExecuteQueryResponse>
+                        </SOAP-ENV:Body>
+                      </SOAP-ENV:Envelope>`));
+                const group = await client.application.getSchema('temp:group:2200');
+                expect(group.label).toBe("email is not empty");
+
+                // return updated schema with label changed
+                client._transport.mockReturnValueOnce(Promise.resolve(`<?xml version='1.0'?>
+                      <SOAP-ENV:Envelope xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:ns='urn:xtk:queryDef' xmlns:SOAP-ENV='http://schemas.xmlsoap.org/soap/envelope/'>
+                        <SOAP-ENV:Body>
+                            <ExecuteQueryResponse xmlns='urn:xtk:queryDef' SOAP-ENV:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'>
+                                <pdomOutput xsi:type='ns:Element' SOAP-ENV:encodingStyle='http://xml.apache.org/xml-soap/literalxml'>
+                                <group expirationDate="" folder-id="1199" id="2200" label="testlist" name="LST260" schema="nms:recipient" type="1">
+                                  <extension label="email is empty" mappingType="sql" name="query" namespace="temp">
+                                    <element advanced="false" dataSource="nms:extAccount:ffda" label="email is empty" name="query" pkSequence="" sqltable="grp2200" unbound="false">
+                                      <compute-string expr=""/>
+                                      <key internal="true" name="internal">
+                                        <keyfield xpath="@id"/>
+                                      </key>
+                                      <attribute advanced="false" belongsTo="@id" label="Primary key" length="0" name="id" notNull="false" sql="true" sqlname="uId" type="uuid" xml="false"/>
+                                      <element advanced="false" externalJoin="true" label="Targeting dimension" name="target" revLink="" target="nms:recipient" type="link" unbound="false">
+                                        <join xpath-dst="@id" xpath-src="@id"/>
+                                      </element>
+                                    </element>
+                                  </extension>
+                                </group>
+                                </pdomOutput>
+                            </ExecuteQueryResponse>
+                        </SOAP-ENV:Body>
+                      </SOAP-ENV:Envelope>`));
+                const group2 = await client.application.getSchema('temp:group:2200');
+                expect(group2.label).toBe("email is empty");
             });
         });
 
@@ -1667,6 +1857,34 @@ describe('Application', () => {
                 expect(node.isCalculated).toBe(true);
             });
 
+            it("Should get node edit type", async () => {
+              const client = await Mock.makeClient();
+              client._transport.mockReturnValueOnce(Mock.LOGON_RESPONSE);
+              await client.NLWS.xtkSession.logon();
+              client._transport.mockReturnValueOnce(Promise.resolve(`<?xml version='1.0'?>
+              <SOAP-ENV:Envelope xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:ns='urn:wpp:default' xmlns:SOAP-ENV='http://schemas.xmlsoap.org/soap/envelope/'>
+              <SOAP-ENV:Body>
+                  <GetEntityIfMoreRecentResponse xmlns='urn:wpp:default' SOAP-ENV:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'>
+                      <pdomDoc xsi:type='ns:Element' SOAP-ENV:encodingStyle='http://xml.apache.org/xml-soap/literalxml'>
+                          <schema name="profile" namespace="nms" xtkschema="xtk:schema">
+                              <element name="profile">
+                                  <compute-string expr="@lastName + ' ' + @firstName +' (' + @email + ')'"/>
+                                  <attribute name="firstName"/>
+                                  <attribute name="lastName"/>
+                                  <attribute name="email" edit="memo"/>
+                              </element>
+                          </schema>
+                      </pdomDoc>
+                  </GetEntityIfMoreRecentResponse>
+              </SOAP-ENV:Body>
+              </SOAP-ENV:Envelope>`));
+              const schema = await client.application.getSchema("nms:profile");
+
+              const node = schema.root.children.get("@email");
+              const editType = node.editType;
+              expect(editType).toBe("memo");
+          });
+
             it("Should get compute string for ref nodes", async () => {
                 const client = await Mock.makeClient();
                 client._transport.mockReturnValueOnce(Mock.LOGON_RESPONSE);
@@ -1855,6 +2073,133 @@ describe('Application', () => {
             });
         });
 
+        describe("default values", () => {
+            
+            it("Should extract default", async () => {
+                var xml = DomUtil.parse(`<schema namespace='xtk' name='workflow'>
+                    <element name='workflow' label='Workflow'>
+                        <attribute default="true" label="In simulation mode:  execute" name="runOnsimulation" type="boolean" xml="true"/>
+                    </element>
+                </schema>`);
+                var schema = newSchema(xml);
+
+                var node = await schema.root.findNode("@runOnsimulation");
+                expect(node).toMatchObject({ name:"@runOnsimulation", childrenCount:0, default: 'true' });
+            });
+
+            it("Should extract default values of a collection of elements", async () => {
+                var xml = DomUtil.parse(`<schema namespace='xtk' name='workflow'>
+                    <element name='workflow' label='Workflow'>
+                        <element name="fork" label="Fork">
+                            <element label="Transitions" name="transitions" xml="true">
+                                <element label="transition" name="transition" ref="transition" unbound="true" xml="true">
+                                    <default>
+                                       &lt;transition name="transition1" enabled="true"/&gt;
+                                       &lt;transition name="transition2" enabled="true"/&gt;
+                                    </default>
+                                </element>
+                            </element>
+                        </element>
+                    </element>
+                </schema>`);
+                var schema = newSchema(xml);
+
+                var node = await schema.root.findNode("fork/transitions/transition");
+                expect(node).toMatchObject({ name:"transition", childrenCount:0, default: [
+                    {
+                      "enabled": "true",
+                      "name": "transition1"
+                    },
+                    {
+                      "enabled": "true",
+                      "name": "transition2"
+                    }
+                  ] });
+            });
+
+            it("Should extract default values of a memo", async () => {
+                var xml = DomUtil.parse(`<schema namespace='xtk' name='workflow'>
+                    <element name='workflow' label='Workflow'>
+                        <element name="directorywatcher" label="File collector">
+                            <element name="period" type="memo" label="Schedule">
+                                <default>"m_abDay='7' m_abDay[0]='0' m_abDay[1]='0'"</default>
+                            </element>
+                        </element>
+                    </element>
+                </schema>`);
+                var schema = newSchema(xml);
+
+                var node = await schema.root.findNode("directorywatcher/period");
+                expect(node).toMatchObject({ name:"period", childrenCount:0, default: "\"m_abDay='7' m_abDay[0]='0' m_abDay[1]='0'\"" });
+            });
+
+            it("Should extract translated default values of a memo", async () => {
+                var xml = DomUtil.parse(`<schema namespace='xtk' name='workflow'>
+                    <element name='workflow' label='Workflow'>
+                        <element name="directorywatcher" label="File collector">
+                            <element name="period" type="memo" label="Schedule">
+                                <translatedDefault>"m_abDay='7' m_abDay[0]='0' m_abDay[1]='0'"</translatedDefault>
+                            </element>
+                        </element>
+                    </element>
+                </schema>`);
+                var schema = newSchema(xml);
+
+                var node = await schema.root.findNode("directorywatcher/period");
+                expect(node).toMatchObject({ name:"period", childrenCount:0, translatedDefault: "\"m_abDay='7' m_abDay[0]='0' m_abDay[1]='0'\"" });
+            });
+
+            it("Should extract translatedDefault attribute", async () => {
+                var xml = DomUtil.parse(`<schema namespace='xtk' name='workflow'>
+                    <element name='workflow' label='Workflow'>
+                        <element name="delivery" label="Delivery">
+                            <element label="Transitions" name="transitions" xml="true">
+                                <element label="transition" name="done" xml="true">
+                                    <attribute label="Label" name="label" type="string" translatedDefault="'Ok'" xml="true"/>
+                                </element>
+                            </element>
+                        </element>
+                    </element>
+                </schema>`);
+                var schema = newSchema(xml);
+
+                var node = await schema.root.findNode("delivery/transitions/done/@label");
+                expect(node).toMatchObject({ name:"@label", childrenCount:0, translatedDefault: "'Ok'" });
+            });
+
+            it("Should extract translatedDefault element", async () => {
+                var xml = DomUtil.parse(`<schema namespace='xtk' name='workflow'>
+                    <element name='workflow' label='Workflow'>
+                        <element name="extract" label="Split">
+                            <element label="Transitions" name="transitions" xml="true">
+                                <element name="extractOutput" ordered="true" template="nms:workflow:extractOutput" unbound="true">
+                                     <translatedDefault>&lt;extractOutput enabled="true" label="Segment" name="subSet" &gt;
+                                     &lt;limiter type="percent" percent="10" random="true"/&gt;
+                                     &lt;filter enabled="true"/&gt;
+                                     &lt;/extractOutput&gt;</translatedDefault>
+                                </element>
+                            </element>
+                        </element>
+                    </element>
+                </schema>`);
+                var schema = newSchema(xml);
+
+                var node = await schema.root.findNode("extract/transitions/extractOutput");
+                expect(node).toMatchObject(
+                    { translatedDefault: [
+                        {
+                            enabled: "true", name:"subSet", 
+                            limiter: { 
+                                type: 'percent',
+                                percent: '10',
+                                random: 'true'
+                            }
+                        }] 
+                    });
+            });
+
+        });
+
         describe("toString", () => {
             var xml = DomUtil.parse(`<schema namespace='nms' name='recipient' label="Recipients" labelSingular="Recipient">
                     <element name='recipient'>
@@ -1934,6 +2279,28 @@ describe('Application', () => {
                 schema = newSchema(xml);
                 node = await schema.root.findNode("country");
                 expect(node.isSQL).toBe(false);
+            });
+
+            it("Should have isSQL even if it also has isXML", async () => {
+                const xml = DomUtil.parse(`<schema namespace='nms' name='delivery' mappingType="sql">
+                    <element name='delivery' sqltable="NmsDelivery">
+                        <element name='properties'>
+                            <attribute name="midAccountUsedName" type="string" xml="true"/>
+                            <attribute name="seedProcessed" sqlname="iSeedProcessed" type="long" xml="true"/>
+                        </element>
+                    </element>
+                </schema>`);
+                const schema = newSchema(xml);
+                const properties = await schema.root.findNode("properties");
+                expect(properties.isSQL).toBe(false);
+                // xml only node is not sql
+                const midAccountUsedName = await properties.findNode("@midAccountUsedName");
+                expect(midAccountUsedName.isSQL).toBe(false);
+                expect(midAccountUsedName.isMappedAsXML).toBe(true);
+                // node may be both xml and sql. If that's the case, it's considered sql
+                const seedProcessed = await properties.findNode("@seedProcessed");
+                expect(seedProcessed.isSQL).toBe(true);
+                expect(seedProcessed.isMappedAsXML).toBe(true);
             });
 
             it("Should be memo and memo data" , async () => {
@@ -2022,6 +2389,98 @@ describe('Application', () => {
                 expect(schema.userDescription).toBe("recipient");
             });
         });
+
+        describe("Translation ids", () => {
+          it("schema should not have label localization id when label does not exist", () => {
+            const xml = DomUtil.parse("<schema namespace='nms' name='recipient'><element name='recipient' label='Recipients'/></schema>");
+            const schema = newSchema(xml);
+            expect(schema.labelLocalizationId).toBeUndefined();
+            expect(schema.descriptionLocalizationId).toBeUndefined();
+          });
+
+          it("schema should have a correct label localization id", () => {
+            const xml = DomUtil.parse("<schema namespace='nms' name='recipient' label='Recipients' desc='Recipient table(profiles)'><element name='recipient' label='Recipients'/></schema>");
+            const schema = newSchema(xml);
+            expect(schema.labelLocalizationId).toBe('nms__recipient__@label');
+            expect(schema.descriptionLocalizationId).toBe('nms__recipient__@desc');
+          });
+
+          it("schema should have a correct singular label localization id", () => {
+            const xml = DomUtil.parse("<schema namespace='nms' name='recipient' labelSingular='Recipient'><element name='recipient' label='Recipients'/></schema>");
+            const schema = newSchema(xml);
+            expect(schema.labelSingularLocalizationId).toBe('nms__recipient__@labelSingular');
+          });
+
+          it("schema should not have singular label localization id when singular label does not exist", () => {
+            const xml = DomUtil.parse("<schema namespace='nms' name='recipient'><element name='recipient' label='Recipients'/></schema>");
+            const schema = newSchema(xml);
+            expect(schema.labelSingularLocalizationId).toBeUndefined();
+          });
+
+          it("root node should have a correct label localization id", () => {
+            const xml = DomUtil.parse("<schema namespace='nms' name='recipient'><element name='recipient' label='Recipients' desc='Recipients'/></schema>");
+            const schema = newSchema(xml);
+            const root = schema.root;
+            expect(root.labelLocalizationId).toBe('nms__recipient__e____recipient__@label');
+            expect(root.descriptionLocalizationId).toBe('nms__recipient__e____recipient__@desc');
+          });
+            
+          it("root node should have the label localization id when label exist but description does not exist", () => {
+            const xml = DomUtil.parse("<schema namespace='nms' name='recipient'><element name='recipient' label='Recipients' /></schema>");
+            const schema = newSchema(xml);
+            const root = schema.root;
+            expect(root.labelLocalizationId).toBe('nms__recipient__e____recipient__@label');
+            expect(root.descriptionLocalizationId).toBe('nms__recipient__e____recipient__@label');
+          });
+            
+          it("child node should have a correct label localization id", () => {
+            const xml = DomUtil.parse("<schema namespace='nms' name='recipient'><element name='lib' label='library' desc='library'/><element name='recipient' label='Recipients'/></schema>");
+            const schema = newSchema(xml);
+            const lib = schema.children["lib"];
+            expect(lib.labelLocalizationId).toBe('nms__recipient__e____lib__@label');
+            expect(lib.descriptionLocalizationId).toBe('nms__recipient__e____lib__@desc');
+          });
+
+          it("attribute should have a correct label localization id", () => {
+            const xml = DomUtil.parse(`<schema namespace='nms' name='recipient'>
+                                            <element name='recipient' label='Recipients'>
+                                                <attribute name='email' type='string' label='email'  desc='email' length='3'/>
+                                            </element>
+                                        </schema>`);
+            const schema = newSchema(xml);
+            const root = schema.root;
+            expect(root.children.get("@email").labelLocalizationId).toBe('nms__recipient__e____recipient__email__@label');
+            expect(root.children.get("@email").descriptionLocalizationId).toBe('nms__recipient__e____recipient__email__@desc');
+          });
+
+          it("Enumeration should have a correct label localization id", () => {
+            const xml = DomUtil.parse(`<schema namespace='nms' name='recipient'>
+                                            <enumeration name="gender" basetype="byte"/>
+                                            <element name='recipient' label='Recipients'></element>
+                                        </schema>`);
+            const schema = newSchema(xml);
+            const enumerations = schema.enumerations;
+            expect(enumerations.gender.labelLocalizationId).toBe('nms__recipient__gender__@label');
+            expect(enumerations.gender.descriptionLocalizationId).toBe('nms__recipient__gender__@desc');
+          });
+
+          it("Enumeration value should have a correct label localization id", () => {
+            const xml = DomUtil.parse(`<schema namespace='nms' name='recipient'>
+                                            <enumeration name="gender" basetype="byte">
+                                                <value name="male" value="0"/>
+                                                <value name="female" value="1"/>                                    
+                                            </enumeration>
+                                            <element name='recipient' label='Recipients'>
+                                            <attribute advanced="true" desc="Recipient sex" enum="nms:recipient:gender"
+                                                label="Gender" name="gender" sqlname="iGender" type="byte"/>
+                                            </element>
+                                        </schema>`);
+            const schema = newSchema(xml);
+            const enumerations = schema.enumerations;
+            expect(enumerations.gender.values.male.labelLocalizationId).toBe('nms__recipient__gender__male__@label');
+            expect(enumerations.gender.values.male.descriptionLocalizationId).toBe('nms__recipient__gender__male__@desc');
+          })
+        });
     });
 
     describe("CurrentLogin", () => {
@@ -2033,13 +2492,15 @@ describe('Application', () => {
                 loginCS: "Alex",
                 timezone: "Europe/Paris",
                 "login-right": [
-                ]
+                ],
+                instanceLocale: "en"
             })
             expect(op.login).toBe("alex");
             expect(op.id).toBe(12);
             expect(op.computeString).toBe("Alex");
             expect(op.timezone).toBe("Europe/Paris");
             expect(op.rights).toEqual([]);
+            expect(op.instanceLocale).toBe("en");
         })
 
         it("Should support missing 'login-right' node", () => {
@@ -2108,6 +2569,7 @@ describe('Application', () => {
             const application = client.application;
             expect(application).not.toBeNull();
             expect(application.buildNumber).toBeUndefined();
+            expect(application.version).toBeUndefined();
             expect(application.instanceName).toBeUndefined();
             expect(application.operator).toBeUndefined();
             expect(application.package).toBeUndefined();
@@ -2145,4 +2607,15 @@ describe('Application', () => {
             expect(schema2).toBeNull();
         });
     });
+
+    describe("Version", () => {
+        it("Should get proper version information", async () => {
+            const client = await Mock.makeClient();
+            client._transport.mockReturnValueOnce(Mock.LOGON_RESPONSE);
+            await client.NLWS.xtkSession.logon();
+            expect(client.application.buildNumber).toBe('9219');
+            expect(client.application.version).toBe('6.7.0');
+        })
+    })
 });
+

@@ -10,26 +10,40 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 (function() {
-"use strict";    
+"use strict";
 
 const { Util } = require('./util.js');
 
+/**
+ * @memberof Utils
+ * @class
+ * @constructor
+ */
 class HttpError {
+  /* Encapsulates an error from an HTTP call
+    * @param {string|number} statusCode - The Http status code
+    * @param {string?} statusText - The Http status text corresponding to the error code
+    * @param {any?} data - The payload of the HTTP response, which usually contains details about the error
+  */
   constructor(statusCode, statusText, data) {
       this.statusCode = statusCode;
       this.statusText = statusText || "";
       this.data = data;
   }
 
+  /**
+   * Returns a short description of the error
+   * @returns {string} a short descrption of the error
+   */
   toString() {
     return `${this.statusCode}${this.statusText ? " " + this.statusText : ""}`;
   }
 }
 
 /**********************************************************************************
- * 
+ *
  * Node implementation
- * 
+ *
  *********************************************************************************/
 /* istanbul ignore else */
 if (!Util.isBrowser()) {
@@ -38,13 +52,13 @@ if (!Util.isBrowser()) {
   const axios = require('axios');
 
   /**
-   * 
+   *
    * Request body (options)
    * - headers (kv)
    * - method
    * - url
    * - data
-   * 
+   *
    * Response
    * - data
    * - statusCode
@@ -52,13 +66,15 @@ if (!Util.isBrowser()) {
    * - request
    */
 
-  const request = (options) => {
+   const request = (options, requestOptions) => {
+    requestOptions = requestOptions || {};
     const request = {
       method: options.method || "GET",
       url: options.url,
       headers: options.headers,
       data: options.data,
-      timeout: 5000,
+      timeout: requestOptions.timeout || 5000,
+      signal: requestOptions.signal,
     };
     return axios(request)
     .then((response) => {
@@ -81,24 +97,25 @@ if (!Util.isBrowser()) {
 }
 
 /**********************************************************************************
- * 
+ *
  * Browser-side implementation of the request-promise-native node module.
  * This simply wraps the fetch API
  * From https://www.npmjs.com/package/request-promise-native
- * 
+ *
  *********************************************************************************/
  else {
 
-  const request = function(options) {
-
+  const request = function(options, requestOptions) {
+    requestOptions = requestOptions || {};
     const headers = new Headers();
     for (var k in options.headers) {
         headers.append(k, options.headers[k]);
-    }    
+    }
     const r = new Request(options.url, {
         method: options.method,
         headers: headers,
-        body: options.data
+        body: options.data,
+        signal : requestOptions.signal,
     });
 
     const p = fetch(r).then(async (response) => {
@@ -108,6 +125,9 @@ if (!Util.isBrowser()) {
             return blob.text();
         });
     }).catch((ex) => {
+      if(ex.name === 'AbortError'){
+        throw ex;
+      }
       const proto = Object.getPrototypeOf(ex);
       if (proto.constructor.name == "HttpError")
         throw ex;

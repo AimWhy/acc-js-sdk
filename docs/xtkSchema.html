@@ -1,0 +1,55 @@
+---
+layout: page
+title: The Schema API
+---
+
+
+
+<p>Reading schemas is a common operation in Campaign. The SDK provides a convenient functions as well as caching for efficient use of schemas.</p>
+<p>In addition, have a look at the <a href="{{ site.baseurl }}/application/html">Application</a> object which contains an object model for accessing and traversing schemas</p>
+
+<pre class="code">
+const schema = await client.getSchema("nms:recipient");
+console.log(JSON.stringify(schema));
+</pre>
+
+<p>A given representation can be forced</p>
+<pre class="code">
+const xmlSchema = await client.getSchema("nms:recipient", "xml");
+const jsonSchema = await client.getSchema("nms:recipient", "SimpleJson");
+</pre>
+
+<p>System enumerations can also be retreived with the fully qualified enumeration name</p>
+<pre class="code">
+const sysEnum = await client.getSysEnum("nms:extAccount:encryptionType");
+</pre>
+
+<p>or from a schema</p>
+<pre class="code">
+const schema = await client.getSchema("nms:extAccount");
+const sysEnum = await client.getSysEnum("encryptionType", schema);
+</pre>
+
+<p>Get a source schema</p>
+<pre class="code">
+var srcSchema = await NLWS.xtkPersist.getEntityIfMoreRecent("xtk:srcSchema|nms:recipient", "", false);
+console.log(JSON.stringify(srcSchema));
+</pre>
+
+<h1>Group schemas</h1>
+
+<p>
+Campaign groups represent marketing lists or audiences. Each group can have it's own specific schema, 
+stored in the `extension` XML element of the group entity. This schema can be generated in a workflow by 
+using the List Update activity.
+</p>
+<p>
+The schema of a group can be retrieved using the `getSchema` method of the client or application objects.
+</p>
+<p>
+The schema id is build as followed: prefix `temp:group:` + id of the group in mms:group (example `temp:group:1234` )
+</p>
+
+<p>Note: group schemas are not cached. The rationale is that they are not accessed as frequently as other,
+  regular schemas, but more importantly that they can change more often that regular schemas.
+</p>

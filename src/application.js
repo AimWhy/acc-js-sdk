@@ -19,7 +19,7 @@ governing permissions and limitations under the License.
  * https://docs.adobe.com/content/help/en/campaign-classic/technicalresources/api/c-Application.html
  * 
  *********************************************************************************/
-const { DomException, XPath } = require('./domUtil.js');
+const { DomException, DomUtil, XPath } = require('./domUtil.js');
 const XtkCaster = require('./xtkCaster.js').XtkCaster;
 const EntityAccessor = require('./entityAccessor.js').EntityAccessor;
 const { ArrayMap } = require('./util.js');
@@ -35,11 +35,14 @@ const PACKAGE_STATUS = { "never": 0, "always": 1, "default": 2, "preCreate": 3 }
 // ========================================================================================
 
 /**
-  * Creates a schema object from an XML representation
-  * This function is not intended to be used publicly.
+  * Creates a schema object from an XML representation.
+  * The returned XtkSchema object will not be added to the application schema cache.
+  * If you do not pass an application object, it will not be possible to follow
+  * references or get enumeration values from the returned XtkSchema
   * 
   * @private
   * @param {DOMElement|DOMDocument} xml the XML document or element representing the schema
+  * @param {Campaign.Application|undefined} the application object which will be used to follow links and references
   * @returns {XtkSchema} a schema object
   * @see {@link XtkSchema}
   * @memberof Campaign
@@ -59,25 +62,55 @@ function propagateImplicitValues(xtkDesc, labelOnly) {
         // Force first letter as uppercase
         xtkDesc.label = xtkDesc.label.substring(0, 1).toUpperCase() + xtkDesc.label.substring(1);
     }
-    if (!labelOnly && !xtkDesc.description) xtkDesc.description = xtkDesc.label;
+    if (!labelOnly && !xtkDesc.description) {
+        xtkDesc.description = xtkDesc.label;
+        xtkDesc.descriptionLocalizationId = xtkDesc.labelLocalizationId;
+    }
 }
 
 // ========================================================================================
 // Schema Cache
 // ========================================================================================
+
+/**
+ * A cache of schemas of type `XtkSchema` instead of plain XML or JSON objects
+ * 
+ * @private
+ * @class
+ * @constructor
+ * @memberof Campaign
+ */
+
 class SchemaCache {
     constructor(client) {
         this._client = client;
         this._schemas = {};
     }
+
+    /**
+      * Get a schema by id from schema cache of type `XtkSchema` 
+     * 
+     * @param {string} schemaId 
+     * @returns {Campaign.XtkSchema} the schema, or null if the schema was not found
+     */
     async getSchema(schemaId) {
         let schema = this._schemas[schemaId];
         if (schema === undefined) {
             schema = await this._client.application._getSchema(schemaId);
             if (!schema) schema = null; // null = not found
-        this._schemas[schemaId] = schema;
+            if (!schemaId.startsWith("temp:group:"))
+                this._schemas[schemaId] = schema;
         }
         return schema;
+    }
+
+    /**
+      * Remove a schema from schema cache. The callback function when refreshing cache in cacheRefresher 
+     * 
+     * @param {string} schemaId 
+     */
+    invalidateCacheItem(schemaId) {
+        this._schemas[schemaId] = undefined;
     }
 }
 
@@ -226,10 +259,16 @@ class XtkSchemaNode {
          this.dataPolicy = EntityAccessor.getAttributeAsString(xml, "dataPolicy");
 
         /**
+         * Returns a string of characters which provides the db enum of the current node.
+         * @type {string}
+         */
+        this.dbEnum = EntityAccessor.getAttributeAsString(xml, "dbEnum");
+
+        /**
          * Returns a string of characters which specifies the editing type of the current node.
          * @type {string}
          */
-         this.editType = EntityAccessor.getAttributeAsString(xml, "editType");
+         this.editType = EntityAccessor.getAttributeAsString(xml, "edit");
 
         /**
          * Only on the root node, returns a string which contains the folder template(s). On the other nodes, it returns undefined.
@@ -348,6 +387,18 @@ class XtkSchemaNode {
         this.unbound = EntityAccessor.getAttributeAsBoolean(xml, "unbound");
 
         /**
+         * If children are ordered
+         * @type {boolean}
+         */
+        this.ordered = EntityAccessor.getAttributeAsBoolean(xml, "ordered");
+
+        /**
+         * The expression controlling the visibility of the current node
+         * @type {string}
+         */
+        this.visibleIf = EntityAccessor.getAttributeAsString(xml, "visibleIf");
+
+        /**
          * Has an unlimited number of children of the same type
          * @type {boolean}
          */
@@ -366,6 +417,12 @@ class XtkSchemaNode {
         this.isAdvanced = EntityAccessor.getAttributeAsBoolean(xml, "advanced");
 
         /**
+         * if returning the whole node when camparing difference
+         * @type {boolean}
+         */
+        this.doesNotSupportDiff = EntityAccessor.getAttributeAsBoolean(xml, "doesNotSupportDiff");
+
+        /**
          * Children of the node. This is a object whose key are the names of the children nodes (without the "@"
          * character for attributes) 
          * @type {Utils.ArrayMap.<Campaign.XtkSchemaNode>}
@@ -377,6 +434,18 @@ class XtkSchemaNode {
          * @type {number}
          */
         this.childrenCount = 0;
+
+        /**
+         * Get the default value of a node
+         * @type {string}
+         */
+        this.default = EntityAccessor.getAttributeAsString(xml, "default");
+
+        /**
+         * Get the default translation for the default value of a node
+         * @type {string}
+         */
+        this.translatedDefault = EntityAccessor.getAttributeAsString(xml, "translatedDefault");
 
         /**
          * Indicates if the node is the root node, i.e. the first child node of the schema, whose name is the same as the schema name
@@ -395,6 +464,8 @@ class XtkSchemaNode {
          * @type {string}
          */
         this.nodePath = this._getNodePath(true)._path;
+
+        this._buildLocalizationIds();
 
         /**
          * Element of type "link" has an array of XtkJoin
@@ -574,6 +645,11 @@ class XtkSchemaNode {
          */
         this.packageStatus = PACKAGE_STATUS[this.packageStatusString];
 
+        /**
+         * Returns a string (a schema id) which indicates the custom/extended entity, attribute belongs to.
+         */
+        this.belongsTo = EntityAccessor.getAttributeAsString(xml, "belongsTo");
+
          // Children (elements and attributes)
         const childNodes = [];
         for (const child of EntityAccessor.getChildElements(xml)) {
@@ -591,6 +667,24 @@ class XtkSchemaNode {
                 this.expr = EntityAccessor.getAttributeAsString(child, "expr");
                 this.isCalculated = false;
             }
+            if (child.tagName === "default" || child.tagName === "translatedDefault") {
+                if(this.unbound) {
+                    // Default value for a collection of elements
+                    const xml = DomUtil.parse(`<xml>${child.textContent}</xml>`);
+                    const json = DomUtil.toJSON(xml);
+                    if(child.tagName === "translatedDefault") {
+                        this.translatedDefault = XtkCaster.asArray(json[this.name]);
+                    } else {
+                        this.default = XtkCaster.asArray(json[this.name]);
+                    }
+                } else {
+                    if(child.tagName === "translatedDefault") {
+                        this.translatedDefault = child.textContent;
+                    } else {
+                        this.default = child.textContent;
+                    }
+                }
+            }
         }
         for (const childNode of childNodes) {
             this.children._push(childNode.name, childNode);
@@ -606,6 +700,39 @@ class XtkSchemaNode {
         // Propagate implicit values
         // Name -> Label -> Desc -> HelpText
         propagateImplicitValues(this);
+    }
+
+    /* create two ids that are identifying in an unique way the node label and 
+     * the node description 
+     * examples:
+     * nms__recipient__e____recipient__emailFormat__@desc
+     * nms__recipient__e____recipient__mobilePhone__@label 
+     * */
+    _buildLocalizationIds() {
+        if (!this.parent) {
+          this._localizationId = this.schema.id.replace(":", "__");
+        } else {
+          this._localizationId = this.parent._localizationId;
+        }
+
+        if (this.parent) {
+          // Separate each element of the path with a double _
+          if (this.isAttribute) {
+            this._localizationId = this._localizationId + "__" + this.name.replace('@', '');
+          } else {
+            // node is not an attribute so it is an element add "e____"
+            this._localizationId = this._localizationId + "__e____" + this.name;
+          }
+        }
+        if (this.label) {
+          this.labelLocalizationId = this._localizationId + "__@label";
+        }
+        if (this.description) {
+          this.descriptionLocalizationId = this._localizationId + "__@desc";
+        }
+        if (!this.parent && this.labelSingular) {
+          this.labelSingularLocalizationId = this._localizationId + "__@labelSingular";
+        }
     }
 
     /**
@@ -875,9 +1002,10 @@ class XtkSchemaNode {
  * @constructor
  * @param {XML.XtkObject} The enumeration value definition
  * @param {Campaign.XtkEnumerationType} baseType the enumeration type (often "string" or "byte")
+ * @param {string} parentTranslationId the translation id of the parent node
  * @memberof Campaign
  */
-function XtkEnumerationValue(xml, baseType) {
+function XtkEnumerationValue(xml, baseType, parentTranslationId) {
     /**
      * The value (unique) name
      * @type {string}
@@ -888,6 +1016,14 @@ function XtkEnumerationValue(xml, baseType) {
      * @type {string}
      */
     this.label = EntityAccessor.getAttributeAsString(xml, "label");
+    /**
+     * Unique identifier for the translation of the label
+     * */
+    this.labelLocalizationId = parentTranslationId + '__' + this.name + '__@label';
+    /**
+     * Unique identifier for the tran,slation of the description of the label
+     * */
+    this.descriptionLocalizationId = parentTranslationId + '__' + this.name + '__@desc';
     /**
      * A human friendly long description of the value
      * @type {string}
@@ -908,7 +1044,12 @@ function XtkEnumerationValue(xml, baseType) {
      * @type {string}
      */
     this.applicableIf = EntityAccessor.getAttributeAsString(xml, "applicableIf");
-    const stringValue = EntityAccessor.getAttributeAsString(xml, "value");
+    let stringValue = EntityAccessor.getAttributeAsString(xml, "value");
+    if (stringValue == "" && XtkCaster.isNumericType(baseType)) {
+        // Some enumerations (ex: xtk:dataTransfer:decimalCount) are of numeric type but do
+        // not have a "value" defined. In this case, we try to cas the name as the value
+        stringValue = this.name;
+    }
     /**
      * The enumeration value, casted according to the enumeration type
      * @type {*}
@@ -969,26 +1110,45 @@ class XtkEnumeration {
          * The enumerations values 
          * @type {Utils.ArrayMap<Campaign.XtkEnumerationValue>}
          */
-         this.values = new ArrayMap();
+        this.values = new ArrayMap();
 
         var defaultValue = EntityAccessor.getAttributeAsString(xml, "default");
+        this._localizationId = `${schemaId}__${this.name}`.replace(':','__');
 
+         // Determine if the enumeration can support both access by name and by index.
+         // Some enumerations, such as xtk:dataTransfer:decimalCount are ambiguous since
+         // they have names which are string reprensentation of their values (ex: name="0").
+         // In this case enumValue[0] may mean either the first enumeration value (index 0)
+         // or the enumeration value with value "0" which happens to be the second
+        let supportsIndexing = true;
+        const values = [];
         for (var child of EntityAccessor.getChildElements(xml, "value")) {
-            const e = new XtkEnumerationValue(child, this.baseType);
-            this.values._push(e.name, e);
+            const e = new XtkEnumerationValue(child, this.baseType, this._localizationId);
+            values.push(e);
+            const numericName = +e.name;
+            if (numericName === numericName) {
+                // Name is a number
+                supportsIndexing = false;
+            }
+        }
+
+        for (const e of values) {
+            this.values._push(e.name, e, !supportsIndexing);
             if (e.image != "") this.hasImage = true;
-            const stringValue = EntityAccessor.getAttributeAsString(child, "value");
+            const stringValue = e.name;
             if (defaultValue == stringValue)
                 this.default = e;
         }
 
+        this.labelLocalizationId = this._localizationId + "__@label";
+        this.descriptionLocalizationId = this._localizationId + "__@desc";
         propagateImplicitValues(this, true);
 
         /**
          * The system enumeration name, without the schema id prefix
          * @type {string}
          */
-         this.shortName = this.name;
+        this.shortName = this.name;
         this.name = `${schemaId}:${this.shortName}`;
     }
 }
@@ -1003,6 +1163,7 @@ class XtkEnumeration {
  * @private
  * @class
  * @constructor
+ * @param {Campaign.Application|undefined} the application object which will be used to follow links and references
  * @augments Campaign.XtkSchemaNode
  * @param {XML.XtkObject} xml the schema definition
  * @memberof Campaign
@@ -1037,7 +1198,6 @@ class XtkSchema extends XtkSchemaNode {
          * @type {string}
          */
         this.labelSingular = EntityAccessor.getAttributeAsString(xml, "labelSingular");
-
         /**
          * The schema mappgin type, following the xtk:srcSchema:mappingType enumeration
          * @type {Campaign.XtkSchemaMappingType}
@@ -1079,7 +1239,9 @@ class XtkSchema extends XtkSchemaNode {
          this.enumerations = new ArrayMap();
          for (var child of EntityAccessor.getChildElements(xml, "enumeration")) {
              const e = new XtkEnumeration(this.id, child);
-             this.enumerations._push(e.shortName, e);
+             if (this.enumerations.get(e.shortName) === undefined) {
+                 this.enumerations._push(e.shortName, e);
+             }
          }
      }
 
@@ -1139,7 +1301,13 @@ class CurrentLogin {
          * @type {string}
          */
         this.timezone = EntityAccessor.getAttributeAsString(userInfo, "timezone");
-        
+       
+        /**
+         * The instance locale
+         * @type { string }
+         */
+        this.instanceLocale = EntityAccessor.getAttributeAsString(userInfo, "instanceLocale");
+
         /**
          * The llist of operator rights
          * @type {string[]}
@@ -1207,29 +1375,45 @@ class Application {
              * The server build number
              * @type {string}
              */
-        this.buildNumber = EntityAccessor.getAttributeAsString(serverInfo, "buildNumber");
+            this.buildNumber = EntityAccessor.getAttributeAsString(serverInfo, "buildNumber");
+            /**
+             * The server version, formatted as major.minor.servicePack (ex: 8.2.10)
+             * @type {string}
+             */
+            const majNumber = EntityAccessor.getAttributeAsString(serverInfo, "majNumber");
+            const minNumber = EntityAccessor.getAttributeAsString(serverInfo, "minNumber");
+            const servicePack = EntityAccessor.getAttributeAsString(serverInfo, "servicePack");
+            if (majNumber && minNumber && servicePack)
+                this.version = majNumber + "." + minNumber + "." + servicePack;
             /**
              * The Campaign instance name
              * @type {string}
              */
-        this.instanceName = EntityAccessor.getAttributeAsString(serverInfo, "instanceName");
+            this.instanceName = EntityAccessor.getAttributeAsString(serverInfo, "instanceName");
             const userInfo = EntityAccessor.getElement(info, "userInfo");
             /**
              * The logged operator
              * @type {Campaign.CurrentLogin}
              */
-        this.operator = new CurrentLogin(userInfo);
+            this.operator = new CurrentLogin(userInfo);
             /**
              * The list of installed packages
              * @type {string[]}
              */
-        this.packages = [];
+            this.packages = [];
             for (var p of EntityAccessor.getChildElements(userInfo, "installed-package")) {
             this.packages.push(`${EntityAccessor.getAttributeAsString(p, "namespace")}:${EntityAccessor.getAttributeAsString(p, "name")}`);
             }
         }
     }
 
+    _registerCacheChangeListener() {
+        this.client._registerCacheChangeListener(this._schemaCache);
+    }
+
+    _unregisterCacheChangeListener() {
+        this.client._unregisterCacheChangeListener(this._schemaCache);
+    }
     /**
      * Get a schema by id. This function returns an XtkSchema object or null if the schema is not found.
      * Using the `XtkSchema` API makes it easier to navigate schemas than using a plain XML or JSON object
@@ -1241,7 +1425,7 @@ class Application {
         return this._schemaCache.getSchema(schemaId);
     }
 
-    // Private function: get a schema without using the cache
+    // Private function: get a schema without using the SchemaCache
     async _getSchema(schemaId) {
         const xml = await this.client.getSchema(schemaId, "xml");
         if (!xml)
